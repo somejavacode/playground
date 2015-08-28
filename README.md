@@ -1,7 +1,7 @@
 # playground 
 
-just a unsorted collection of some java command line tools, utilities, benchmarks and experiments.
-ufw is the mirco-framework for common code.
+just an unsorted collection of some java command line tools, utilities, benchmarks and experiments.
+ufw is the micro-framework for common code.
 
 all done with focus on minimal size and minimal dependencies (currently none) and efficiency.
 
@@ -10,19 +10,26 @@ all done with focus on minimal size and minimal dependencies (currently none) an
 this is all rather raw.
 
 ```
-mvn clean package
+mvn clean compile
 set CLASSPATH=target/classes
 java PakPacker
+```
+
+using jar file
+```
+mvn clean package
+java -cp playground-1.0-SNAPSHOT.jar PakPacker
 ```
 
 "experimental" without maven. windows variant (linux is homework):
 ```
 rmdir /s /q target
 mkdir target\classes
-javac -d target/classes -encoding utf-8 src/main/java/*.java src/main/java/ufw/*.java
+javac -d target/classes -encoding utf-8 src/main/java/*.java src/main/java/test.ufw/*.java
 set CLASSPATH=target/classes
 java PakPacker
 ```
+
 
 ## useful tools
 

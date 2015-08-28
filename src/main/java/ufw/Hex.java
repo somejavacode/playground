@@ -22,6 +22,10 @@ public class Hex {
      * @return the String representation
      */
     public static String toString(byte[] ba, int offset, int length) {
+        Validate.notNull(ba);
+        Validate.isTrue(offset >= 0);
+        Validate.isTrue(length > 0);
+        Validate.isTrue(offset + length <= ba.length);
 
         char[] buf = new char[length * 2];
         int j = 0;
@@ -114,7 +118,9 @@ public class Hex {
      * @return the according byte array
      */
     public static byte[] fromString(String hex) {
+        Validate.notNull(hex);
         int len = hex.length();
+        Validate.isTrue(len % 2 == 0, "number of characters must be even. got " + len);
 
         byte[] buf = new byte[((len + 1) / 2)];
         int i = 0;

@@ -23,7 +23,7 @@ public class FileTool {
      * @param canWrite fails if cannot write
      */
     public static void testProperties(File file, boolean exists, boolean existsNot, boolean isFile, boolean isDirectory, boolean canRead, boolean canWrite) {
-        Validate.isNotNull(file, "File is null.");
+        Validate.notNull(file, "File is null.");
         if (exists && !file.exists()) {  // rely on "short circuit"
             throw new RuntimeException("File does not exist. " + file);
         }

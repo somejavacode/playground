@@ -1,7 +1,6 @@
 package ufw;
 
 import java.io.PrintStream;
-import java.util.Date;
 
 public class Log {
 
@@ -72,7 +71,7 @@ public class Log {
         if (level.getLevelNr() < levelNr) {
             return;
         }
-        String time = FixDateFormat.formatSync(new Date());
+        String time = FixDateFormat.formatSync(System.currentTimeMillis()); // TODO: make date more flexible
         String thread = "[" + Thread.currentThread().getName() + "] ";
         ps.println(time + thread + level.getLevelMsg() + message);
         if (t != null) {

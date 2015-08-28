@@ -36,13 +36,6 @@ public class HttpRequester {
 
         UrlParts parts = new UrlParts(args[0]);
 
-
-      /*
-        GET url HTTP/1.1
-        User-Agent: Opera/9.80 (Windows NT 5.2; WOW64) Presto/2.12.388 Version/12.14
-        Host: ad.adworx.at
-       */
-
         String host = parts.host;
 
         // String host = "www.orf.at";   // java.net.ConnectException: Connection timed out: connect
@@ -260,7 +253,7 @@ public class HttpRequester {
         private String path;
 
         public UrlParts(String url) {
-            Validate.isNotNull(url, "url is null.");
+            Validate.notNull(url, "url is null.");
             int schemeIdx = url.indexOf("://");
             Validate.isTrue(schemeIdx > 0, "found no scheme separator in url " + url);
             scheme = url.substring(0, schemeIdx);
