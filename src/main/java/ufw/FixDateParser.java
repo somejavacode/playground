@@ -31,18 +31,20 @@ public class FixDateParser {
     }
 
     private static long parse(Calendar cal, String date) {
-        cal.set(Calendar.YEAR, parseInt(date.substring(12, 16)));
+        Validate.notNull(date);
+        Validate.isTrue(date.length() == 29, " invalid date size. date='", date, "'");
+        cal.set(Calendar.YEAR, Integer.parseInt(date.substring(12, 16)));
         cal.set(Calendar.MONTH, lookupMonth(date.substring(8, 11)));
-        cal.set(Calendar.DAY_OF_MONTH, parseInt(date.substring(5, 7)));
-        cal.set(Calendar.HOUR_OF_DAY, parseInt(date.substring(17, 19)));
-        cal.set(Calendar.MINUTE, parseInt(date.substring(20, 22)));
-        cal.set(Calendar.SECOND, parseInt(date.substring(23, 25)));
+        cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(date.substring(5, 7)));
+        cal.set(Calendar.HOUR_OF_DAY, Integer.parseInt(date.substring(17, 19)));
+        cal.set(Calendar.MINUTE, Integer.parseInt(date.substring(20, 22)));
+        cal.set(Calendar.SECOND, Integer.parseInt(date.substring(23, 25)));
         cal.set(Calendar.MILLISECOND, 0);
         int day = cal.get(Calendar.DAY_OF_WEEK);
         int dayDate = lookupDay(date.substring(0, 3));
-        Validate.isTrue(day == dayDate, "day does not match. Date=" + date);
+        Validate.isTrue(day == dayDate, "day does not match. Date='", date, "'");
         String tz = date.substring(26, 29);
-        Validate.isTrue("GMT".equals(tz), "Invalid time zone: " + tz);
+        Validate.isTrue("GMT".equals(tz), "Invalid time zone. value=", tz);
         return cal.getTimeInMillis();
     }
 
@@ -71,20 +73,6 @@ public class FixDateParser {
         if (day.equals("Fri")) return Calendar.FRIDAY;
         if (day.equals("Sat")) return Calendar.SATURDAY;
         throw new RuntimeException("invalid day string: '" + day + "'");
-    }
-
-    private static int parseInt(String string) {
-        int val = 0;
-        int mul = 1;
-        for (int pos = string.length() - 1; pos >= 0; pos--) {
-            int charNr = (int) string.charAt(pos);
-            if (charNr < 48 || charNr > 57) {
-                throw new RuntimeException("invalid number: " + string);
-            }
-            val += (charNr - 48) * mul;
-            mul *= 10;
-        }
-        return val;
     }
 
 }

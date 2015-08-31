@@ -52,6 +52,7 @@ public class DateParseTest {
         checkParseFail("Mon, 27 Jxl 2009 12:28:53 GMT");
         checkParseFail("Mon, 27 Jul 2009 12:28:53 GWT");
         checkParseFail("Mon, 27 Jul 2009 12:2x:53 GMT");
+        checkParseFail(" Mon, 27 Jul 2009 12:2x:53 GMT");
     }
 
     private void checkParseFail(String t1) throws Exception {

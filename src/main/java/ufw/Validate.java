@@ -2,28 +2,36 @@ package ufw;
 
 public class Validate {
 
-    public static void isTrue(boolean condition, String message) {
+    public static void isTrue(boolean condition, Object... messages) {
         if (!condition) {
-            throw new RuntimeException("Validate.isTrue failed" + getMessage(message));
+            throw new RuntimeException("Validate.isTrue failed: " + getMessage(messages));
         }
     }
 
     public static void isTrue(boolean condition) {
-        isTrue(condition, null);
+        if (!condition) {
+            throw new RuntimeException("Validate.isTrue failed.");
+        }
     }
 
-    public static void notNull(Object object, String message) {
+    public static void notNull(Object object, Object... message) {
         if (object == null) {
-            throw new RuntimeException("Validate.notNull failed" + getMessage(message));
+            throw new RuntimeException("Validate.notNull failed: " + getMessage(message));
         }
     }
 
     public static void notNull(Object object) {
-        notNull(object, null);
+        if (object == null) {
+            throw new RuntimeException("Validate.notNull failed.");
+        }
     }
 
-    private static String getMessage(String message) {
-        return message == null ? "." : ": " + message;
+    private static String getMessage(Object... messages) {
+        StringBuilder sb = new StringBuilder();
+        for (Object message : messages) {
+            sb.append(message);
+        }
+        return sb.toString();
     }
 
 }

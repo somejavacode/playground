@@ -120,7 +120,7 @@ public class Hex {
     public static byte[] fromString(String hex) {
         Validate.notNull(hex);
         int len = hex.length();
-        Validate.isTrue(len % 2 == 0, "number of characters must be even. got " + len);
+        Validate.isTrue(len % 2 == 0, "number of characters must be even. got ", len);
 
         byte[] buf = new byte[((len + 1) / 2)];
         int i = 0;

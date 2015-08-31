@@ -47,7 +47,7 @@ public class DateFormatTest {
 
         // this is 2-3 times faster than SimpleDateFormat
         FastDateFormat fdf = FastDateFormat.getInstance(FMT_STRING);
-        t = new Timer("FastDateFormmat " + count + " times", true);
+        t = new Timer("FastDateFormat " + count + " times", true);
         for (int i = 0; i < count; i++) {
             fdf.format(new Date(start + i));
         }
