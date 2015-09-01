@@ -2,6 +2,7 @@ package test.ufw;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import ufw.FixDateFormat;
 import ufw.Log;
 import ufw.Timer;
 
@@ -10,6 +11,7 @@ import java.io.BufferedOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.TimeZone;
 
 public class LogTest {
 
@@ -20,6 +22,15 @@ public class LogTest {
         Log.warn("warn text");
         Log.error("error text");
         Log.error("exception text", new RuntimeException("oops"));
+    }
+
+    @Test
+    public void testTimeZone() {
+        Log.debug("local time log");
+        FixDateFormat.setTimeZoneUTC();  // NOTE: this is ugly..
+        Log.info("UTC time log");
+        FixDateFormat.setTimeZone(TimeZone.getDefault());
+        Log.debug("back to local time");
     }
 
     @Test
@@ -53,9 +64,9 @@ public class LogTest {
         int repeats = 100000;
         Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args.log")));
 
-        Timer t = new Timer("log " + repeats + " varargs", true);
+        Timer t = new Timer("log " + repeats + " varargs", false);
         for (int i = 0; i < repeats; i++) {
-            Log.debug("logging line: ", i, " two times ", 2 * i);  // 850ms
+            // Log.debug("logging line: ", i, " two times ", 2 * i);  // 850ms
         }
         Log.setPs(System.out);
         t.stop(true);
@@ -64,6 +75,50 @@ public class LogTest {
         t = new Timer("log " + repeats + " times concat", false);
         for (int i = 0; i < repeats; i++) {
             Log.debug("logging line: " +  i + " two times " + 2 * i);  // 520ms
+        }
+        Log.setPs(System.out);
+        t.stop(true);
+    }
+
+    @Test
+    @Ignore  // do not run benchmark by default
+    public void benchmarkArgsShort() throws IOException {
+        int repeats = 1000000;
+        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args1.log")));
+
+        Timer t = new Timer("log " + repeats + " varargs", false);
+        for (int i = 0; i < repeats; i++) {
+            Log.debug("logging line: ", i);
+        }
+        Log.setPs(System.out);
+        t.stop(true);
+
+        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_concat1.log")));
+        t = new Timer("log " + repeats + " times concat", false);
+        for (int i = 0; i < repeats; i++) {
+            Log.debug("logging line: " +  i);
+        }
+        Log.setPs(System.out);
+        t.stop(true);
+    }
+
+    @Test
+    @Ignore  // do not run benchmark by default
+    public void benchmarkArgsLong() throws IOException {
+        int repeats = 100000;
+        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args2.log")));
+
+        Timer t = new Timer("log " + repeats + " varargs", false);
+        for (int i = 0; i < repeats; i++) {
+            // Log.debug("logging line: ", i, " two times ", 2 * i, " three times ", 3 * i, " four times ", 4 * i);
+        }
+        Log.setPs(System.out);
+        t.stop(true);
+
+        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_concat2.log")));
+        t = new Timer("log " + repeats + " times concat", false);
+        for (int i = 0; i < repeats; i++) {
+            Log.debug("logging line: " +  i + " two times " + 2 * i + " three times " + 3 * i + " four times" + 4 * i);
         }
         Log.setPs(System.out);
         t.stop(true);
@@ -99,7 +154,7 @@ public class LogTest {
     @Ignore  // do not run benchmark by default
     public void benchmarkFile() throws Exception {
 
-        int repeats = 500000;
+        int repeats = 100000;
 
         Timer t = new Timer("log " + repeats + " times (write to file)", false);
         Log.setLevel(Log.Level.DEBUG);
