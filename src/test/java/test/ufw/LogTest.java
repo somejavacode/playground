@@ -1,19 +1,28 @@
 package test.ufw;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import ufw.FixDateFormat;
 import ufw.Log;
 import ufw.Timer;
 
-
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.util.TimeZone;
 
 public class LogTest {
+    
+    public static final String TEMP_DIR = "/tmp/playground/";
+
+    @Before
+    public void init() {
+        try {
+            new File(TEMP_DIR).mkdirs();  // this returns false if directory exists. this case is irrelevant
+        }
+        catch (Exception ex) {
+            Log.error("create problem.", ex);
+        }
+    }
 
     @Test
     public void testLevels() {
@@ -46,7 +55,7 @@ public class LogTest {
         Log.info(message);  // this fails in windoze cmd.exe shell with default encoding. see ConsoleEncodingTest
 
         // enforce UTF-8 when writing to file
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_uml.log"), true, "UTF-8"));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_uml.log"), true, "UTF-8"));
         Log.info(message);
         Log.setPs(System.out); // need to reset this static stuff
     }
@@ -62,16 +71,16 @@ public class LogTest {
     @Ignore  // do not run benchmark by default
     public void benchmarkArgs() throws IOException {
         int repeats = 100000;
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args.log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_args.log")));
 
         Timer t = new Timer("log " + repeats + " varargs", false);
         for (int i = 0; i < repeats; i++) {
-            // Log.debug("logging line: ", i, " two times ", 2 * i);  // 850ms
+            Log.debug("logging line: ", i, " two times ", 2 * i);  // 850ms
         }
         Log.setPs(System.out);
         t.stop(true);
 
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_concat.log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_concat.log")));
         t = new Timer("log " + repeats + " times concat", false);
         for (int i = 0; i < repeats; i++) {
             Log.debug("logging line: " +  i + " two times " + 2 * i);  // 520ms
@@ -84,7 +93,7 @@ public class LogTest {
     @Ignore  // do not run benchmark by default
     public void benchmarkArgsShort() throws IOException {
         int repeats = 1000000;
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args1.log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_args1.log")));
 
         Timer t = new Timer("log " + repeats + " varargs", false);
         for (int i = 0; i < repeats; i++) {
@@ -93,7 +102,7 @@ public class LogTest {
         Log.setPs(System.out);
         t.stop(true);
 
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_concat1.log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_concat1.log")));
         t = new Timer("log " + repeats + " times concat", false);
         for (int i = 0; i < repeats; i++) {
             Log.debug("logging line: " +  i);
@@ -105,21 +114,48 @@ public class LogTest {
     @Test
     @Ignore  // do not run benchmark by default
     public void benchmarkArgsLong() throws IOException {
-        int repeats = 100000;
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_args2.log")));
+        int repeats = 500000;
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_args2.log")));
 
-        Timer t = new Timer("log " + repeats + " varargs", false);
+        Timer t = new Timer("log " + repeats + " times varargs", false);
         for (int i = 0; i < repeats; i++) {
-            // Log.debug("logging line: ", i, " two times ", 2 * i, " three times ", 3 * i, " four times ", 4 * i);
+            Log.debug("logging line: ", i, " two times ", 2 * i, " three times ", 3 * i, " four times ", 4 * i);
         }
         Log.setPs(System.out);
         t.stop(true);
 
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test_concat2.log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_concat2.log")));
         t = new Timer("log " + repeats + " times concat", false);
         for (int i = 0; i < repeats; i++) {
-            Log.debug("logging line: " +  i + " two times " + 2 * i + " three times " + 3 * i + " four times" + 4 * i);
+            Log.debug("logging line: " +  i + " two times " + 2 * i + " three times " + 3 * i + " four times " + 4 * i);
         }
+        Log.setPs(System.out);
+        t.stop(true);
+    }
+
+    @Test
+    @Ignore  // do not run benchmark by default
+    public void benchmarkArgsLongBuff() throws IOException {
+        int repeats = 500000;
+        int bufferSize = 16384;
+
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(TEMP_DIR + "test_args2_buff.log"), bufferSize);
+        Log.setPs(new PrintStream(bos));
+        Timer t = new Timer("log " + repeats + " times varargs buffered", false);
+        for (int i = 0; i < repeats; i++) {
+            Log.debug("logging line: ", i, " two times ", 2 * i, " three times ", 3 * i, " four times ", 4 * i);
+        }
+        bos.close();
+        Log.setPs(System.out);
+        t.stop(true);
+
+        bos = new BufferedOutputStream(new FileOutputStream(TEMP_DIR + "test_concat2_buff.log"), bufferSize);
+        Log.setPs(new PrintStream(bos));
+        t = new Timer("log " + repeats + " times concat buffered", false);
+        for (int i = 0; i < repeats; i++) {
+            Log.debug("logging line: " +  i + " two times " + 2 * i + " three times " + 3 * i + " four times " + 4 * i);
+        }
+        bos.close();
         Log.setPs(System.out);
         t.stop(true);
     }
@@ -154,11 +190,11 @@ public class LogTest {
     @Ignore  // do not run benchmark by default
     public void benchmarkFile() throws Exception {
 
-        int repeats = 100000;
+        int repeats = 1000000;
 
         Timer t = new Timer("log " + repeats + " times (write to file)", false);
         Log.setLevel(Log.Level.DEBUG);
-        Log.setPs(new PrintStream(new FileOutputStream("/tmp/test" + repeats + ".log")));
+        Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test" + repeats + ".log")));
         for (int i = 0; i < repeats; i++) {
             Log.debug("logging line nr ", i);
         }
@@ -168,7 +204,7 @@ public class LogTest {
         t = new Timer("log " + repeats + " times (write to file, buffered)", false);
         Log.setLevel(Log.Level.DEBUG);
         int bufferSize = 16384;
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream("/tmp/test" + repeats + "_buff.log"), bufferSize);
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(TEMP_DIR + "test" + repeats + "_buff.log"), bufferSize);
         Log.setPs(new PrintStream(bos));
         for (int i = 0; i < repeats; i++) {
             Log.debug("logging line nr ", i);
