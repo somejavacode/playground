@@ -10,10 +10,9 @@ import ufw.Timer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-
 public class DateFormatTest {
 
-    private static final String FMT_STRING = "yyyy-MM-dd HH:mm:ss.SSS ";
+    private static final String FMT_STRING = "yyyy-MM-dd HH:mm:ss.SSS";
 
     @Test
     public void testFormat() {
@@ -23,10 +22,10 @@ public class DateFormatTest {
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < 100; i++) {
-            long time = start + 342531 * i;  // just a few time stamps
+            long time = start + 342531 * i;  // just a few time samples
             String simple = sdf.format(new Date(time));
             String fix = FixDateFormat.format(time);
-            // check result of FixDateFormat
+            // compare result with FixDateFormat
             Assert.assertEquals(simple, fix);
         }
     }

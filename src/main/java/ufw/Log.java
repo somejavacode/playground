@@ -17,18 +17,10 @@ public class Log {
             this.levelNr = number;
             this.levelMsg = msg;
         }
-
-        public int getLevelNr() {
-            return levelNr;
-        }
-
-        public String getLevelMsg() {
-            return levelMsg;
-        }
     }
 
     // default level debug
-    private static int levelNr = Level.DEBUG.getLevelNr();
+    private static int levelNr = Level.DEBUG.levelNr;
 
     private static PrintStream ps = System.out;
 
@@ -39,7 +31,7 @@ public class Log {
     }
 
     public static void setLevel(Level level) {
-        levelNr = level.getLevelNr();
+        levelNr = level.levelNr;
     }
 
     public static void setPs(PrintStream ps) {
@@ -50,6 +42,11 @@ public class Log {
         log(Level.DEBUG, message);
     }
 
+//    this is hardly faster than the varargs version
+//    public static void debug(Object message, Object message1) {
+//        log(Level.DEBUG, message.toString() + message1.toString());
+//    }
+
     public static void debug(Object... messages) {
         log(Level.DEBUG, null, null, messages);
     }
@@ -57,6 +54,15 @@ public class Log {
     public static void info(String message) {
         log(Level.INFO, message);
     }
+
+    public static void info(String message, String message1) {
+        log(Level.INFO, message + message1);
+    }
+
+    public static void info(String message, String message1, String message2) {
+        log(Level.INFO, message + message1 + message2);
+    }
+
 
     public static void info(Object... messages) {
         log(Level.INFO, null, null, messages);
@@ -89,25 +95,30 @@ public class Log {
     // TODO: synchronized is "cheap solution" to avoid that stack trace gets "separated" from log line
     // without stack there is no need for synchronization ("ps.println()" is synchronized)
     private static synchronized void log(Level level, String message, Throwable t, Object... messages) {
-        if (level.getLevelNr() < levelNr) {
+        if (level.levelNr < levelNr) {
             return;
         }
-        String time = FixDateFormat.formatSync(System.currentTimeMillis());
-        String thread = "[" + Thread.currentThread().getName() + "] ";
-        String finalMessage = message != null ? message : getMessage(messages);
-        ps.print(time + thread + level.getLevelMsg() + finalMessage);
+        StringBuilder sb = new StringBuilder(100);  // estimated log line length as default
+        FixDateFormat.formatSync(sb, System.currentTimeMillis());
+        sb.append(" [").append(Thread.currentThread().getName()).append("] ");
+        sb.append(level.levelMsg).append(" ");
+        if (message != null) {
+            sb.append(message);
+        }
+        else {
+            getMessage(sb, messages);
+        }
+        ps.print(sb.toString());
         ps.print(newLine);
         if (t != null) {
             t.printStackTrace(ps);
         }
     }
 
-    // todo: cut and waste Validate
-    private static String getMessage(Object... messages) {
-        StringBuilder sb = new StringBuilder();
+    // todo: almost cut and waste Validate
+    private static void getMessage(StringBuilder sb, Object... messages) {
         for (Object message : messages) {
             sb.append(message);
         }
-        return sb.toString();
     }
 }
