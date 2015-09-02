@@ -6,17 +6,17 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * this is a "fixed" http date parser. pattern: "EEE, dd MMM yyyy HH:mm:ss z"
- * 27 Jul 2009 12:28:53 GMT"
+ * this is a "fixed" HTTP date parser. pattern: "EEE, dd MMM yyyy HH:mm:ss z"
+ * <br/>
+ * e.g. "Tue, 27 Jul 2009 12:28:53 GMT"
  */
 public class FixDateParser {
 
-    // NOTE: this is implicit local time zone.
-    private static GregorianCalendar cal = new GregorianCalendar();
+    private static final String GMT_ID = "GMT";
 
-    static {
-        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
-    }
+    private static final TimeZone GMT = TimeZone.getTimeZone(GMT_ID);
+
+    private static GregorianCalendar cal = new GregorianCalendar(GMT);
 
     // NOTE: the shared and synchronized calendar is faster in single threaded case.
     public static synchronized long parseSync(String date) {
@@ -25,14 +25,13 @@ public class FixDateParser {
 
     // slower if single threaded but possibly faster for multi core multi threaded case
     public static long parse(String date) {
-        GregorianCalendar cal = new GregorianCalendar();
-        cal.setTimeZone(TimeZone.getTimeZone("UTC"));
+        GregorianCalendar cal = new GregorianCalendar(GMT);
         return parse(cal, date);
     }
 
     private static long parse(Calendar cal, String date) {
         Validate.notNull(date);
-        Validate.isTrue(date.length() == 29, " invalid date size. date='", date, "'");
+        Validate.isTrue(date.length() == 29, " invalid date string length. date='", date, "'");
         cal.set(Calendar.YEAR, Integer.parseInt(date.substring(12, 16)));
         cal.set(Calendar.MONTH, lookupMonth(date.substring(8, 11)));
         cal.set(Calendar.DAY_OF_MONTH, Integer.parseInt(date.substring(5, 7)));
@@ -44,7 +43,7 @@ public class FixDateParser {
         int dayDate = lookupDay(date.substring(0, 3));
         Validate.isTrue(day == dayDate, "day does not match. Date='", date, "'");
         String tz = date.substring(26, 29);
-        Validate.isTrue("GMT".equals(tz), "Invalid time zone. value=", tz);
+        Validate.isTrue(GMT_ID.equals(tz), "Invalid time zone. value=", tz);
         return cal.getTimeInMillis();
     }
 
