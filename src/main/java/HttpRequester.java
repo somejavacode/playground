@@ -55,21 +55,24 @@ public class HttpRequester {
         OutputStream os = s.getOutputStream();
         InputStream is = s.getInputStream();
         int seed = 13;
+        int dlSize = 10000000;
+        // int throttle = 5; // milliseconds after 8k
+        int throttle = 0;
 
         // Request r = new Request("/testapp/test?echo=33", "GET");
         // Request r = new Request("/testapp/logout.png", "GET");
         // Request r = new Request("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
-        Request r = new Request("/testapp/test?d=500000000&r=" + seed, "GET"); // 1mio random bytes
+        Request r = new Request("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + throttle, "GET");
         r.addHeader("Host", host);
 //        r.addHeader("User-Agent", "Mickey Mouse");
 
         byte[] reqBytes = r.getBytes(); // this can be reused for certain benchmarks
 
-        Log.info("req bytes:\n" + Hex.toStringBlock(reqBytes));
+        Log.info("req bytes1:\n" + Hex.toStringBlock(reqBytes));
 
         os.write(reqBytes);
-        os.write(reqBytes);
-        os.write(reqBytes);  // test 3x pipeline
+//        os.write(reqBytes);
+//        os.write(reqBytes);  // test 3x pipeline
         os.flush();
 
 //        byte[] buffer = new byte[1024];
@@ -82,8 +85,32 @@ public class HttpRequester {
         ResponseHeader res = new ResponseHeader();
         res.fromInputStream(is);
         body = readResponse(is, res.contentLength, true, res.chunked, seed);
-        Log.info("body:\n" + Hex.toStringBlock(body));
+        // Log.info("body:\n" + Hex.toStringBlock(body));
 
+        int bytes = 500000;
+        boolean chunked = false;
+        r = new Request("/testapp/test?u=" + bytes + "&r=" + seed, "POST");
+        r.addHeader("Host", host);
+        r.addHeader("Content-Type", "application/octet-stream");
+        if (chunked) {
+            r.addHeader("Transfer-Encoding", "chunked");
+        }
+        else {
+            r.addHeader("Content-Length", bytes + "");
+        }
+
+        reqBytes = r.getBytes();
+        Log.info("req bytes2:\n" + Hex.toStringBlock(reqBytes));
+
+        os.write(reqBytes); // request header
+        writeRequest(os, null, bytes, chunked, seed);
+        os.flush();
+
+        res = new ResponseHeader();
+        res.fromInputStream(is);
+        body = readResponse(is, res.contentLength, true, res.chunked, 0);
+        // Log.info("body:\n" + Hex.toStringBlock(body)); NPE
+        /*
         res = new ResponseHeader();
         res.fromInputStream(is);
         body = readResponse(is, res.contentLength, false, res.chunked, seed);
@@ -93,7 +120,7 @@ public class HttpRequester {
         res.fromInputStream(is);
         body = readResponse(is, res.contentLength, false, res.chunked, seed);
         Log.info("body:\n" + Hex.toStringBlock(body));
-
+        */
 
 //        while ((bytesRec = is.read(buffer)) > 0) {  // how to "express": got 500bytes and there is "no more".
 //            Log.log("resp bytes: " + bytesRec + "\n" + Hex.toStringBlock(buffer));
@@ -102,6 +129,26 @@ public class HttpRequester {
         os.close();
         is.close();
         s.close();
+
+    }
+
+    /**
+     * write request body to stream
+     * @param os destination stream for body
+     * @param is source stream
+     * @param length number of bytes to transfer
+     * @param chunked if true use chunked transfer encoding
+     * @param createSeed if not 0 write random bytes
+     */
+    private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed) throws IOException {
+
+        if (!chunked && createSeed != 0) {
+            // request body  (fixed length)
+            byte[] body = new byte[length];
+            Random rand = new Random(createSeed);
+            rand.nextBytes(body);
+            os.write(body);
+        }
 
     }
 
