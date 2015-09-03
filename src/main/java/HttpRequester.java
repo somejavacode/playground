@@ -1,5 +1,5 @@
-import ufw.Hex;
 import ufw.Log;
+import ufw.Timer;
 import ufw.Validate;
 
 import java.io.IOException;
@@ -55,25 +55,25 @@ public class HttpRequester {
         OutputStream os = s.getOutputStream();
         InputStream is = s.getInputStream();
         int seed = 13;
-        int dlSize = 10000000;
-        // int throttle = 5; // milliseconds after 8k
-        int throttle = 0;
+        int dlSize = 1000000;
+        int dlThrottle = 5; // milliseconds every 8k
 
         // Request r = new Request("/testapp/test?echo=33", "GET");
         // Request r = new Request("/testapp/logout.png", "GET");
         // Request r = new Request("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
-        Request r = new Request("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + throttle, "GET");
+        Request r = new Request("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
         r.addHeader("Host", host);
 //        r.addHeader("User-Agent", "Mickey Mouse");
 
         byte[] reqBytes = r.getBytes(); // this can be reused for certain benchmarks
 
-        Log.info("req bytes1:\n" + Hex.toStringBlock(reqBytes));
-
+        // Log.info("req bytes1:\n" + Hex.toStringBlock(reqBytes));
+        Timer t = new Timer("download", true);
         os.write(reqBytes);
 //        os.write(reqBytes);
 //        os.write(reqBytes);  // test 3x pipeline
         os.flush();
+        t.split("request header flush");
 
 //        byte[] buffer = new byte[1024];
 //        int bytesRec = 0;
@@ -84,30 +84,39 @@ public class HttpRequester {
 
         ResponseHeader res = new ResponseHeader();
         res.fromInputStream(is);
+        t.split("response header received " + res.statusCode);
+
         body = readResponse(is, res.contentLength, true, res.chunked, seed);
         // Log.info("body:\n" + Hex.toStringBlock(body));
+        t.split("response body received");
 
-        int bytes = 500000;
+
+        int ulSize = 1000000;
+        int ulThrottle = 5;
         boolean chunked = false;
-        r = new Request("/testapp/test?u=" + bytes + "&r=" + seed, "POST");
+        r = new Request("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
         r.addHeader("Host", host);
         r.addHeader("Content-Type", "application/octet-stream");
         if (chunked) {
             r.addHeader("Transfer-Encoding", "chunked");
         }
         else {
-            r.addHeader("Content-Length", bytes + "");
+            r.addHeader("Content-Length", ulSize + "");
         }
 
         reqBytes = r.getBytes();
-        Log.info("req bytes2:\n" + Hex.toStringBlock(reqBytes));
+        // Log.info("req bytes2:\n" + Hex.toStringBlock(reqBytes));
 
+        t = new Timer("upload", true);
         os.write(reqBytes); // request header
-        writeRequest(os, null, bytes, chunked, seed);
+        t.split("request header write");
+        writeRequest(os, null, ulSize, chunked, seed);
+        t.split("request body written");
         os.flush();
 
         res = new ResponseHeader();
         res.fromInputStream(is);
+        t.split("response header received " + res.statusCode);
         body = readResponse(is, res.contentLength, true, res.chunked, 0);
         // Log.info("body:\n" + Hex.toStringBlock(body)); NPE
         /*
@@ -406,7 +415,7 @@ public class HttpRequester {
                     }
                     else if (s == Status.H0d0a0d) {
                         addHeader(header);
-                        Log.info("last header: " + header);
+                        // Log.info("last header: " + header);
                         header = null;  // release to GC?
                         break; // done with header parsing....
                     }
@@ -417,7 +426,7 @@ public class HttpRequester {
                     // previous header "done"
                     addHeader(header);
                     s = Status.HByte; // continue next header
-                    Log.info("header: " + header);
+                    // Log.info("header: " + header);
                     header = new StringBuilder();
                 }
 

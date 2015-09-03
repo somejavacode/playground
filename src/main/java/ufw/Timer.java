@@ -8,6 +8,7 @@ public class Timer {
 
     private String action;
     private long start;
+    private long lastSplit;
     private long duration;
 
 
@@ -20,9 +21,25 @@ public class Timer {
     public Timer(String action, boolean log) {
         this.action = action;
         this.start = System.nanoTime();
+        this.lastSplit = start;
         if (log) {
             Log.info("start " + action);
         }
+    }
+
+    /**
+     * log intermediate time (show total time and time since last split)
+     *
+     * @param splitAction split action used for logging
+     */
+    public void split(String splitAction) {
+        long splitTime = System.nanoTime();
+        long splitDelta = splitTime - lastSplit;
+        long current = splitTime - start;
+        Log.info("split " + action + "/" + splitAction +
+                " t=" + getTimeString(current, true) +
+                " s=" + getTimeString(splitDelta, true));
+        lastSplit = splitTime;
     }
 
     /**
@@ -34,7 +51,7 @@ public class Timer {
         Validate.isTrue(duration == 0, "timer already stopped.");
         duration = System.nanoTime() - start;
         if (log) {
-            Log.info("done " + action + " took=" + getTimeString(true));
+            Log.info("done " + action + " took=" + getTimeString(duration, true));
         }
     }
 
@@ -51,12 +68,12 @@ public class Timer {
      * @param fractions show fractions of milliseconds (microseconds)
      * @return time String
      */
-    public String getTimeString(boolean fractions) {
+    public String getTimeString(long time, boolean fractions) {
         if (fractions) {
             // use formatter, could speed up with
             // show millis with 3 digits (i.e. microseconds)
             DecimalFormat df = new DecimalFormat("#.###", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
-            return df.format(duration / 1000000.0) + "ms";
+            return df.format(time / 1000000.0) + "ms";
         }
         else {
             return duration / 1000000 + "ms";
