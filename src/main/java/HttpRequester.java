@@ -28,11 +28,11 @@ import java.util.StringTokenizer;
 
 public class HttpRequester {
 
+    private static final String ASCII = "ASCII";
+
     public static void main(String[] args) throws Exception {
-        //
 
         args = new String[] {"http://localhost:8080/test", "10"};
-
 
         UrlParts parts = new UrlParts(args[0]);
 
@@ -75,9 +75,6 @@ public class HttpRequester {
         os.flush();
         t.split("request header flush");
 
-//        byte[] buffer = new byte[1024];
-//        int bytesRec = 0;
-
         // interesting: for 3x pipeline: first read one, second read two responses.
 
         byte[] body;
@@ -90,10 +87,10 @@ public class HttpRequester {
         // Log.info("body:\n" + Hex.toStringBlock(body));
         t.split("response body received");
 
-
         int ulSize = 1000000;
         int ulThrottle = 5;
-        boolean chunked = false;
+        // boolean chunked = ulSize > 32768;
+        boolean chunked = true;
         r = new Request("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
         r.addHeader("Host", host);
         r.addHeader("Content-Type", "application/octet-stream");
@@ -151,14 +148,40 @@ public class HttpRequester {
      */
     private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed) throws IOException {
 
-        if (!chunked && createSeed != 0) {
-            // request body  (fixed length)
-            byte[] body = new byte[length];
+        if (createSeed != 0) {
             Random rand = new Random(createSeed);
-            rand.nextBytes(body);
-            os.write(body);
-        }
+            if (chunked) {
+                int chunkSize = 5000;
+                byte[] chunk = new byte[chunkSize];
+                byte[] chunkHeader = (Integer.toString(chunkSize) + "\r\n").getBytes(ASCII);
+                int remaining = length;
+                while (remaining > chunkSize) {
+                    rand.nextBytes(chunk);  // TODO: fails after 70000 bytes with java.net.SocketException: Software caused connection abort: socket write error
+                                            // assume that server validation error breaks upstream...
+                    Log.info("remaining " + remaining);  // TODO: remove debugging log
+                    os.write(chunkHeader);
+                    os.write(chunk);
+                    os.write(0x0d);
+                    os.write(0x0a);
+                    remaining -= chunkSize;
+                }
+                if (remaining > 0) {
+                    byte[] lastChunk = new byte[remaining];
+                    rand.nextBytes(lastChunk);
+                    os.write(Integer.toString(remaining).getBytes(ASCII));
+                    os.write(0x0d);
+                    os.write(0x0a);
+                }
+                os.write("0\r\n\r\n".getBytes(ASCII));  // final chunk (zero bytes) and trailer
+            }
+            else {
+                // request body  (fixed length)
+                byte[] body = new byte[length];
 
+                rand.nextBytes(body);
+                os.write(body);
+            }
+        }
     }
 
     private static byte[] readResponse(InputStream is, int length, boolean dummy, boolean chunked, int validateSeed) throws IOException {
@@ -512,7 +535,7 @@ public class HttpRequester {
             sb.append("\r\n");
 
             //
-            return sb.toString().getBytes(Charset.forName("ASCII"));  // RFC 7230 3.2.4. ... tl;dr ... ASCII "preferred"
+            return sb.toString().getBytes(Charset.forName(ASCII));  // RFC 7230 3.2.4. ... tl;dr ... ASCII "preferred"
         }
 
     }
