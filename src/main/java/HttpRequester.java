@@ -58,10 +58,10 @@ public class HttpRequester {
         int dlSize = 1000000;
         int dlThrottle = 5; // milliseconds every 8k
 
-        // Request r = new Request("/testapp/test?echo=33", "GET");
-        // Request r = new Request("/testapp/logout.png", "GET");
-        // Request r = new Request("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
-        Request r = new Request("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
+        // RequestHeader r = new RequestHeader("/testapp/test?echo=33", "GET");
+        // RequestHeader r = new RequestHeader("/testapp/logout.png", "GET");
+        // RequestHeader r = new RequestHeader("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
+        RequestHeader r = new RequestHeader("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
         r.addHeader("Host", host);
 //        r.addHeader("User-Agent", "Mickey Mouse");
 
@@ -91,7 +91,9 @@ public class HttpRequester {
         int ulThrottle = 5;
         // boolean chunked = ulSize > 32768;
         boolean chunked = true;
-        r = new Request("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
+        int blockSize = 4096;
+        int clientThrottle = 0;
+        r = new RequestHeader("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
         r.addHeader("Host", host);
         r.addHeader("Content-Type", "application/octet-stream");
         if (chunked) {
@@ -107,7 +109,7 @@ public class HttpRequester {
         t = new Timer("upload", true);
         os.write(reqBytes); // request header
         t.split("request header write");
-        writeRequest(os, null, ulSize, chunked, seed);
+        writeRequest(os, null, ulSize, chunked, seed, blockSize, clientThrottle);
         t.split("request body written");
         os.flush();
 
@@ -146,29 +148,33 @@ public class HttpRequester {
      * @param chunked if true use chunked transfer encoding
      * @param createSeed if not 0 write random bytes
      */
-    private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed) throws IOException {
+    private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed, int blockSize, int sleep) throws Exception {
 
         if (createSeed != 0) {
             Random rand = new Random(createSeed);
             if (chunked) {
-                int chunkSize = 5000;
-                byte[] chunk = new byte[chunkSize];
-                byte[] chunkHeader = (Integer.toString(chunkSize) + "\r\n").getBytes(ASCII);
+                // int chunkSize = 512; // 16384;
+                byte[] chunk = new byte[blockSize];
+                byte[] chunkHeader = (Integer.toString(blockSize, 16) + "\r\n").getBytes(ASCII);
                 int remaining = length;
-                while (remaining > chunkSize) {
-                    rand.nextBytes(chunk);  // TODO: fails after 70000 bytes with java.net.SocketException: Software caused connection abort: socket write error
-                                            // assume that server validation error breaks upstream...
-                    Log.info("remaining " + remaining);  // TODO: remove debugging log
+                while (remaining > blockSize) {
+                    rand.nextBytes(chunk);
                     os.write(chunkHeader);
                     os.write(chunk);
                     os.write(0x0d);
                     os.write(0x0a);
-                    remaining -= chunkSize;
+                    remaining -= blockSize;
+                    if (sleep > 0) {
+                        Thread.sleep(sleep);
+                    }
                 }
                 if (remaining > 0) {
                     byte[] lastChunk = new byte[remaining];
                     rand.nextBytes(lastChunk);
-                    os.write(Integer.toString(remaining).getBytes(ASCII));
+                    os.write(Integer.toString(remaining, 16).getBytes(ASCII));
+                    os.write(0x0d);
+                    os.write(0x0a);
+                    os.write(lastChunk);
                     os.write(0x0d);
                     os.write(0x0a);
                 }
@@ -176,10 +182,28 @@ public class HttpRequester {
             }
             else {
                 // request body  (fixed length)
-                byte[] body = new byte[length];
 
-                rand.nextBytes(body);
-                os.write(body);
+                // all in one, rather memory consuming..
+                // byte[] body = new byte[length];
+                // rand.nextBytes(body);
+                // os.write(body);
+
+                int remaining = length;
+                byte[] bodyPart = new byte[blockSize];
+                while (remaining > blockSize) {
+                    rand.nextBytes(bodyPart);
+                    os.write(bodyPart);
+                    remaining -= blockSize;
+                    if (sleep > 0) {
+                        Thread.sleep(sleep);
+                    }
+                }
+                // final block
+                if (remaining > 0) {
+                    byte[] last = new byte[remaining];
+                    rand.nextBytes(last);
+                    os.write(last);
+                }
             }
         }
     }
@@ -504,13 +528,13 @@ public class HttpRequester {
         }
     }
 
-    private static class Request {
+    private static class RequestHeader {
 
         private String url;
         private String method;
         private ArrayList<String> headers;
 
-        public Request(String url, String method) {
+        public RequestHeader(String url, String method) {
             this.url = url;
             this.method = method;
             this.headers = new ArrayList<String>();
@@ -539,6 +563,5 @@ public class HttpRequester {
         }
 
     }
-
 
 }
