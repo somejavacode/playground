@@ -56,7 +56,7 @@ public class HttpRequester {
         InputStream is = s.getInputStream();
         int seed = 13;
         int dlSize = 1000000;
-        int dlThrottle = 5; // milliseconds every 8k
+        int dlThrottle = 0; // milliseconds every 8k
 
         // RequestHeader r = new RequestHeader("/testapp/test?echo=33", "GET");
         // RequestHeader r = new RequestHeader("/testapp/logout.png", "GET");
@@ -81,17 +81,18 @@ public class HttpRequester {
 
         ResponseHeader res = new ResponseHeader();
         res.fromInputStream(is);
-        t.split("response header received " + res.statusCode);
+        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">");
 
         body = readResponse(is, res.contentLength, true, res.chunked, seed);
         // Log.info("body:\n" + Hex.toStringBlock(body));
         t.split("response body received");
 
-        int ulSize = 1000000;
-        int ulThrottle = 5;
+        //int ulSize = 8333;
+        int ulSize = 833333;
+        int ulThrottle = 0;
         // boolean chunked = ulSize > 32768;
-        boolean chunked = true;
-        int blockSize = 4096;
+        boolean chunked = false;
+        int blockSize = 512;
         int clientThrottle = 0;
         r = new RequestHeader("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
         r.addHeader("Host", host);
@@ -110,12 +111,16 @@ public class HttpRequester {
         os.write(reqBytes); // request header
         t.split("request header write");
         writeRequest(os, null, ulSize, chunked, seed, blockSize, clientThrottle);
+
+//        os.write(0x32); // surplus byte  // TODO: server does not detect these extra bytes (chunked = false)...
+//        os.write(0x32); // surplus byte
+//        os.write(0x32); // surplus byte
         t.split("request body written");
         os.flush();
 
         res = new ResponseHeader();
         res.fromInputStream(is);
-        t.split("response header received " + res.statusCode);
+        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">");
         body = readResponse(is, res.contentLength, true, res.chunked, 0);
         // Log.info("body:\n" + Hex.toStringBlock(body)); NPE
         /*
