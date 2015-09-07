@@ -101,7 +101,7 @@ public class Log {
         StringBuilder sb = new StringBuilder(100);  // estimated log line length as default
         FixDateFormat.formatSync(sb, System.currentTimeMillis());
         sb.append(" [").append(Thread.currentThread().getName()).append("] ");
-        sb.append(level.levelMsg).append(" ");
+        sb.append(level.levelMsg);
         if (message != null) {
             sb.append(message);
         }

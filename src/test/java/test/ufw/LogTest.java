@@ -12,7 +12,7 @@ import java.util.TimeZone;
 
 public class LogTest {
     
-    public static final String TEMP_DIR = "/tmp/playground/";
+    private static final String TEMP_DIR = "/tmp/playground/log";
 
     @Before
     public void init() {
