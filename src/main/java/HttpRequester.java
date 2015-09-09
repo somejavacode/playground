@@ -88,11 +88,13 @@ public class HttpRequester {
         t.split("response body received");
 
         //int ulSize = 8333;
-        int ulSize = 833333;
+        // int ulSize = 83333; // OK
+        int ulSize = 83333;
+
         int ulThrottle = 0;
         // boolean chunked = ulSize > 32768;
-        boolean chunked = false;
-        int blockSize = 512;
+        boolean chunked = true;
+        int blockSize = 2048;
         int clientThrottle = 0;
         r = new RequestHeader("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
         r.addHeader("Host", host);
@@ -152,13 +154,14 @@ public class HttpRequester {
      * @param length number of bytes to transfer
      * @param chunked if true use chunked transfer encoding
      * @param createSeed if not 0 write random bytes
+     * @param blockSize buffer or junk size
+     * @param sleep sleep after each block to delay transfer
      */
     private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed, int blockSize, int sleep) throws Exception {
 
         if (createSeed != 0) {
             Random rand = new Random(createSeed);
             if (chunked) {
-                // int chunkSize = 512; // 16384;
                 byte[] chunk = new byte[blockSize];
                 byte[] chunkHeader = (Integer.toString(blockSize, 16) + "\r\n").getBytes(ASCII);
                 int remaining = length;
@@ -186,13 +189,6 @@ public class HttpRequester {
                 os.write("0\r\n\r\n".getBytes(ASCII));  // final chunk (zero bytes) and trailer
             }
             else {
-                // request body  (fixed length)
-
-                // all in one, rather memory consuming..
-                // byte[] body = new byte[length];
-                // rand.nextBytes(body);
-                // os.write(body);
-
                 int remaining = length;
                 byte[] bodyPart = new byte[blockSize];
                 while (remaining > blockSize) {
@@ -399,15 +395,6 @@ public class HttpRequester {
 
     private static class ResponseHeader {
 
-        private enum Status {
-            HByte,
-            H0d,
-            H0d0a,
-            H0d0a0d,
-        }
-
-        // status of reading header bytes....
-
         private int statusCode;
         private String statusMessage;
         private ArrayList<String> headers;
@@ -435,90 +422,41 @@ public class HttpRequester {
             StringBuilder header = new StringBuilder();
             headers = new ArrayList<String>();
             // do this byte wise, too hard with buffers....
-            Status s = Status.HByte;
             contentLength = 0;  // what if header not present?
             chunked = false;
             close = false; // http 1.1 default
-            int received;
 
-            while (true) {
-                // read next header byte
-                received = is.read();
-                if (received == -1) { // "end of stream"
-                    throw new RuntimeException(); // TODO early end of stream
-                }
-                if (received == 0x0d) {
-                    if (s == Status.HByte) {
-                        s = Status.H0d;
-                        if (header.length() == 0) {
-                            throw new RuntimeException(); // TODO
-                        }
-                    }
-                    else if (s == Status.H0d0a) {
-                        s = Status.H0d0a0d;
-                        continue;
-                    }
-                    else throw new RuntimeException(); // TODO
-                }
-                if (received == 0x0a) {
-                    if (s == Status.H0d) {
-                        s = Status.H0d0a;
-                        continue;
-                    }
-                    else if (s == Status.H0d0a0d) {
-                        addHeader(header);
-                        // Log.info("last header: " + header);
-                        header = null;  // release to GC?
-                        break; // done with header parsing....
-                    }
-                    else throw new RuntimeException(); // TODO
-                }
+            // first header line
+            String line1 = readCRLF(is);
+            Validate.isTrue(line1.startsWith("HTTP/1.1 "));
+            StringTokenizer st = new StringTokenizer(line1, " ");
+            st.nextToken();
+            statusCode = Integer.parseInt(st.nextToken());
+            statusMessage = st.nextToken();
 
-                if (s == Status.H0d0a) {
-                    // previous header "done"
-                    addHeader(header);
-                    s = Status.HByte; // continue next header
-                    // Log.info("header: " + header);
-                    header = new StringBuilder();
+            String h; // each header line
+            while ((h = readCRLF(is)).length() > 0) {
+                if (h.startsWith("Content-Type")) {
+                    contentType = getHeaderValue(h);
                 }
-
-                if (s == Status.HByte) {
-                    if (received < 31 || received > 126) {
-                        throw new RuntimeException("invalid character: " + received);
-                    }
-                    header.append((char)received);  // "safe" ascii cast
+                else if (h.startsWith("Transfer-Encoding")) {
+                    transferEncoding = getHeaderValue(h);
+                    chunked = "chunked".equals(transferEncoding);
                 }
-            }
-        }
-
-        private void addHeader(StringBuilder header) {
-            String h = header.toString();
-            if (h.startsWith("HTTP/1.1 ")) {  // TODO: fair assumption but still: enforce that it's true
-                StringTokenizer st = new StringTokenizer(h, " ");
-                st.nextToken();
-                statusCode = Integer.parseInt(st.nextToken());
-                statusMessage = st.nextToken();
-            }
-            else if (h.startsWith("Content-Type")) {
-                contentType = getHeaderValue(h);
-            }
-            else if (h.startsWith("Transfer-Encoding")) {
-                transferEncoding = getHeaderValue(h);
-                chunked = "chunked".equals(transferEncoding);
-            }
-            else if (h.startsWith("Content-Length")) {
-                contentLength = Integer.parseInt(getHeaderValue(h));
-            }
-            else if (h.startsWith("Connection")) {
-                connection = getHeaderValue(h);
-                close = "close".equals(connection);
-            }
+                else if (h.startsWith("Content-Length")) {
+                    contentLength = Integer.parseInt(getHeaderValue(h));
+                }
+                else if (h.startsWith("Connection")) {
+                    connection = getHeaderValue(h);
+                    close = "close".equals(connection);
+                }
 //            else if (h.startsWith("Date")) {  omitted for speed
 //                date = parseDate(getHeaderValue(h));
 //            }
-
-            headers.add(h);
+                headers.add(h);
+            }
         }
+
 
         /** get header value from header line */
         private String getHeaderValue(String header) {

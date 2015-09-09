@@ -87,7 +87,8 @@ public class FileTool {
         while (remaining > 0) {
             int bytes = remaining > buffer.length ? buffer.length : remaining;
             randomAccessFile.seek(pos);
-            randomAccessFile.read(buffer, 0, bytes); // TODO: check if all bytes were read
+            int readBytes = randomAccessFile.read(buffer, 0, bytes);
+            Validate.isTrue(readBytes == bytes, "missing bytes from file");
             fos.write(buffer, 0, bytes);
             remaining -= bytes;
             pos += bytes;
