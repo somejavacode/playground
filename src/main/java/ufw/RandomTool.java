@@ -90,12 +90,54 @@ public class RandomTool {
         fos.close(); // todo: this should be "finally"
     }
 
-    public void writeToStream(Random rand, OutputStream os, int length) {
-        // todo
+    /**
+     * write random bytes to output stream (without flush)
+     *
+     * @param rand random generator
+     * @param os the stream to write to
+     * @param length number of bytes to write
+     * @param blockSize size of block buffer
+     * @param sleep sleep time after each block
+     */
+    public void writeToStream(Random rand, OutputStream os, int length, int blockSize, int sleep) throws Exception {
+        int remaining = length;
+        byte[] bodyPart = new byte[blockSize];
+        while (remaining > blockSize) {
+            rand.nextBytes(bodyPart);
+            os.write(bodyPart);
+            remaining -= blockSize;
+            if (sleep > 0) {
+                Thread.sleep(sleep);
+            }
+        }
+        // final block
+        if (remaining > 0) {
+            byte[] last = new byte[remaining];
+            rand.nextBytes(last);
+            os.write(last);
+        }
     }
 
+    /**
+     * write random bytes to output stream
+     *
+     * @param rand random generator
+     * @param os the stream to write to
+     * @param length number of bytes to write
+     */
+    public void writeToStream(Random rand, OutputStream os, int length) throws Exception {
+        writeToStream(rand, os, length, 8192, 0);
+    }
+
+    /**
+     * read from stream and validate bytes against random bytes
+     *
+     * @param rand random generator
+     * @param is the stream to read from
+     * @param length number of bytes to read
+     */
     public void validateFromStream(Random rand, InputStream is, int length) {
-        // todo
+
     }
 
 }
