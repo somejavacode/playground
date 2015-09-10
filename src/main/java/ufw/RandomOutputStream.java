@@ -13,7 +13,11 @@ public class RandomOutputStream extends OutputStream {
     private int length;
     private int count; // number of bytes written to stream
 
-
+    /**
+     * create random stream "sink"
+     * @param seed seed for random
+     * @param length number of expected bytes
+     */
     public RandomOutputStream(int seed, int length) {
         this.random = new RandomBytes(seed);
         this.length = length;

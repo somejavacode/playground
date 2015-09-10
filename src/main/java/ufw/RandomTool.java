@@ -9,6 +9,8 @@ import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
 
+// not deleted to compare benchmark results. RandomBytes is the fast and clean solution
+@Deprecated
 public class RandomTool {
 
     /**

@@ -5,6 +5,7 @@ import org.junit.Test;
 import ufw.Log;
 import ufw.RandomBytes;
 
+import java.util.Arrays;
 import java.util.Random;
 
 public class RandomBytesTest {
@@ -30,6 +31,22 @@ public class RandomBytesTest {
     }
 
     @Test
+    public void testRanges() {
+        int seed = 12;
+        RandomBytes r = new RandomBytes(seed);
+        byte[] bytes = new byte[15];
+        r.nextBytes(bytes);
+
+        r = new RandomBytes(seed);
+        byte[] bytes2 = new byte[15];
+        r.nextBytes(bytes2, 0, 3);
+        r.nextBytes(bytes2, 3, 5);
+        r.nextBytes(bytes2, 8, 7);
+
+        Assert.assertTrue(Arrays.equals(bytes, bytes2));
+    }
+
+    @Test
     public void testSingleByteRange() {
         int seed = 12;
         RandomBytes r = new RandomBytes(seed);
@@ -52,7 +69,6 @@ public class RandomBytesTest {
         Assert.assertEquals(max, 127);
         // expect -0.5 * count, test for range: -count .. 0
         Assert.assertTrue(sum < 0 && sum > -count);
-
     }
 
     @Test
@@ -81,6 +97,7 @@ public class RandomBytesTest {
         }
     }
 
+    // this is the unlucky "simulation" of missing signature Random.nextByte().
     public byte nextByte(Random r) {
         byte[] single = new byte[1];
         r.nextBytes(single);

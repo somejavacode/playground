@@ -4,13 +4,20 @@ package ufw;
 import java.io.IOException;
 import java.io.InputStream;
 
+/**
+ * InputStream as source of random bytes
+ */
 public class RandomInputStream extends InputStream {
 
     private RandomBytes random;
     private int length;
     private int count; // number of bytes read
 
-
+    /**
+     * create new random stream "source"
+     * @param seed seed for random
+     * @param length number of bytes to deliver
+     */
     public RandomInputStream(int seed, int length) {
         this.random = new RandomBytes(seed);
         this.length = length;
