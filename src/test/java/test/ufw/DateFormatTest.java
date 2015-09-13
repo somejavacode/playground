@@ -40,6 +40,9 @@ public class DateFormatTest {
 
             String date8 = dtf.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault()));
             Assert.assertEquals(simple, date8);
+
+            String fixAlt = FixDateFormatAlt.format(time);
+            Assert.assertEquals(simple, fixAlt);
         }
     }
 
@@ -83,6 +86,12 @@ public class DateFormatTest {
         t = new Timer("FixDateFormat " + count + " times", true);
         for (int i = 0; i < count; i++) {
             FixDateFormat.format(start + i);
+        }
+        t.stop(true);
+
+        t = new Timer("FixDateFormatAlt " + count + " times", true);
+        for (int i = 0; i < count; i++) {
+            FixDateFormatAlt.format(start + i);
         }
         t.stop(true);
 
