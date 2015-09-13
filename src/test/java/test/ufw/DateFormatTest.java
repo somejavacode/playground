@@ -8,6 +8,12 @@ import ufw.FixDateFormat;
 import ufw.Timer;
 
 import java.text.SimpleDateFormat;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class DateFormatTest {
@@ -18,15 +24,24 @@ public class DateFormatTest {
     public void testFormat() {
 
         SimpleDateFormat sdf = new SimpleDateFormat(FMT_STRING);
+        FastDateFormat fdf = FastDateFormat.getInstance(FMT_STRING);
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(FMT_STRING);
 
         long start = System.currentTimeMillis();
 
         for (int i = 0; i < 100; i++) {
             long time = start + 342531 * i;  // just a few time samples
             String simple = sdf.format(new Date(time));
+
             String fix = FixDateFormat.format(time);
             // compare result with FixDateFormat
             Assert.assertEquals(simple, fix);
+
+            String fast = fdf.format(time);
+            Assert.assertEquals(simple, fast);
+
+            String date8 = dtf.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault()));
+            Assert.assertEquals(simple, date8);
         }
     }
 
@@ -41,6 +56,14 @@ public class DateFormatTest {
         Timer t = new Timer("SimpleDateFormat " + count + " times", true);
         for (int i = 0; i < count; i++) {
             sdf.format(new Date(start + i));
+        }
+        t.stop(true);
+
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern(FMT_STRING);
+        t = new Timer("DateTimeFormatter " + count + " times", true);
+        ZoneId zid = ZoneId.systemDefault();
+        for (int i = 0; i < count; i++) {
+            dtf.format(LocalDateTime.ofInstant(Instant.ofEpochMilli(start + i), zid));
         }
         t.stop(true);
 
