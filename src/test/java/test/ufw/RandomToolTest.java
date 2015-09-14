@@ -117,18 +117,34 @@ public class RandomToolTest {
 
     @Test
     public void testRandAltV2() {
-        compareRandomBytes(1, 1);
-        compareRandomBytes(1, 2);
-        compareRandomBytes(1, 3);
-        compareRandomBytes(1, 4);
-        compareRandomBytes(1, 8);
-        compareRandomBytes(1, 12);
-        compareRandomBytes(1, 13);
-        compareRandomBytes(1, 14);
-        compareRandomBytes(1, 15);
-        compareRandomBytes(1, 4999);
-        compareRandomBytes(4711, 1024 * 1024);
-        compareRandomBytes(4712, 1024 * 1024);
+        compareRandomBytesAltV2(1, 1);
+        compareRandomBytesAltV2(1, 2);
+        compareRandomBytesAltV2(1, 3);
+        compareRandomBytesAltV2(1, 4);
+        compareRandomBytesAltV2(1, 8);
+        compareRandomBytesAltV2(1, 12);
+        compareRandomBytesAltV2(1, 13);
+        compareRandomBytesAltV2(1, 14);
+        compareRandomBytesAltV2(1, 15);
+        compareRandomBytesAltV2(1, 4999);
+        compareRandomBytesAltV2(4711, 1024 * 1024);
+        compareRandomBytesAltV2(4712, 1024 * 1024);
+    }
+
+    @Test
+    public void testRandAltV3() {
+        compareRandomBytesAltV3(1, 1);
+        compareRandomBytesAltV3(1, 2);
+        compareRandomBytesAltV3(1, 3);
+        compareRandomBytesAltV3(1, 4);
+        compareRandomBytesAltV3(1, 8);
+        compareRandomBytesAltV3(1, 12);
+        compareRandomBytesAltV3(1, 13);
+        compareRandomBytesAltV3(1, 14);
+        compareRandomBytesAltV3(1, 15);
+        compareRandomBytesAltV3(1, 4999);
+        compareRandomBytesAltV3(4711, 1024 * 1024);
+        compareRandomBytesAltV3(4712, 1024 * 1024);
     }
 
     @Test
@@ -146,13 +162,23 @@ public class RandomToolTest {
 
     }
 
-    private void compareRandomBytes(int seed, int size) {
+    private void compareRandomBytesAltV2(int seed, int size) {
         byte[] bytes = new byte[size];
         byte[] bytesAlt = new byte[size];
         Random rand = new Random(seed);
         rand.nextBytes(bytes);
         rand = new Random(seed);
         nextBytesV2(rand, bytesAlt);
+        Assert.assertTrue(Arrays.equals(bytes, bytesAlt));
+    }
+
+    private void compareRandomBytesAltV3(int seed, int size) {
+        byte[] bytes = new byte[size];
+        byte[] bytesAlt = new byte[size];
+        Random rand = new Random(seed);
+        rand.nextBytes(bytes);
+        rand = new Random(seed);
+        nextBytesV3(rand, bytesAlt);
         Assert.assertTrue(Arrays.equals(bytes, bytesAlt));
     }
 
