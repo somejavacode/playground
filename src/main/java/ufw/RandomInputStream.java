@@ -35,7 +35,7 @@ public class RandomInputStream extends InputStream {
     }
 
     @Override
-    public int read(byte b[], int pos, int size) throws IOException {
+    public int read(byte[] b, int pos, int size) throws IOException {
         // Validate.isTrue(pos + size <= b.length); // check bounds
         int remaining = length - count;
         if (remaining <= 0) {  // no bytes left

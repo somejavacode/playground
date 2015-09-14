@@ -241,9 +241,9 @@ public class PakPacker {
     }
 
     private static class PakFile {
-        int version;
-        int resourceCount;
-        byte encoding;
+        private int version;
+        private int resourceCount;
+        private byte encoding;
 
         @Override
         public String toString() {
@@ -256,9 +256,9 @@ public class PakPacker {
     }
 
     private static class Resource {
-        short id;
-        int size;
-        int offset;
+        private short id;
+        private int size;
+        private int offset;
 
         @Override
         public String toString() {

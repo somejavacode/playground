@@ -1,9 +1,7 @@
 package test.ufw;
 
-
 import org.junit.Assert;
 import org.junit.Test;
-import ufw.Log;
 import ufw.Timer;
 
 public class TimerTest {
@@ -28,7 +26,6 @@ public class TimerTest {
         t.stop(true);    // approx 1ms. far to slow. assume hotspot warm-up effect
     }
 
-
     @Test
     public void testTimerSplit() throws Exception {
         Timer t = new Timer("splitting", true);
@@ -37,7 +34,6 @@ public class TimerTest {
         Thread.sleep(44);
         t.split("lap2");
         t.stop(true);
-
     }
 
 }

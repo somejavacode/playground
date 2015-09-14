@@ -88,7 +88,7 @@ public class Hex {
             if (showChars) {
                 if (bytes < bytesPerLine) {
                     int blanks = 3 * (bytesPerLine - bytes);  // usual blanks
-                    int missingPipes = (bytesPerLine -1) / pipeEvery - (bytes - 1) / pipeEvery;
+                    int missingPipes = (bytesPerLine - 1) / pipeEvery - (bytes - 1) / pipeEvery;
                     blanks += missingPipes * 2;
                     for (int i = 0; i < blanks; i++) {
                         result.append(" "); // not that elegant
@@ -154,7 +154,7 @@ public class Hex {
     // return printable character or ".", NOTE: currently strips also > 127
     private static char printChar(byte ch) {
         if (ch >= 32) {
-            return (char)ch;
+            return (char) ch;
         }
         else {
             return '.';

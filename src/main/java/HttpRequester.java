@@ -61,7 +61,7 @@ public class HttpRequester {
         // RequestHeader r = new RequestHeader("/testapp/test?echo=33", "GET");
         // RequestHeader r = new RequestHeader("/testapp/logout.png", "GET");
         // RequestHeader r = new RequestHeader("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
-        RequestHeader r = new RequestHeader("/testapp/test?d=" +dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
+        RequestHeader r = new RequestHeader("/testapp/test?d=" + dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
         r.addHeader("Host", host);
 //        r.addHeader("User-Agent", "Mickey Mouse");
 
@@ -404,9 +404,9 @@ public class HttpRequester {
         private int contentLength;
         private String contentType;
         private String connection;   // "close"
-        boolean close;
+        private boolean close;
         private String transferEncoding; // "chunked"
-        boolean chunked;
+        private boolean chunked;
 
         /**
          * this is tricky:
@@ -465,7 +465,7 @@ public class HttpRequester {
                 throw new RuntimeException("header without ':' " + header);
             }
             while (header.charAt(pos + 1) == ' ') {  // may be more than one blank?
-                pos +=1;
+                pos += 1;
             }
             return header.substring(pos + 1);
         }

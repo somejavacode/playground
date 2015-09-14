@@ -37,7 +37,7 @@ public class RawDisk {
 
 
         int repeats = 5000;
-        Log.info("start loading " +repeats + " sectors");
+        Log.info("start loading " + repeats + " sectors");
         long start = System.nanoTime();
 
         for (int i = 0; i < repeats; i++) {

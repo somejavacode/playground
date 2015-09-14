@@ -38,7 +38,7 @@ public class RandomOutputStream extends OutputStream {
     }
 
     @Override
-    public void write(byte b[], int pos, int size) throws IOException {
+    public void write(byte[] b, int pos, int size) throws IOException {
 
         count += size;
         if (count > length) {

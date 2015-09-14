@@ -6,8 +6,8 @@ public class Log {
 
     public enum Level {
         DEBUG(10, "DEBUG "),
-        INFO( 20, "INFO  "),
-        WARN( 30, "WARN  "),
+        INFO(20,  "INFO  "),
+        WARN(30,  "WARN  "),
         ERROR(40, "ERROR ");
 
         private int levelNr;

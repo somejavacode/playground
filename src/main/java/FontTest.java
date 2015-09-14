@@ -1,7 +1,9 @@
-import java.awt.*;
-
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 
 /**
  * testing font rendering "effects" with certain italics fonts on OpenJDK (i.e. with FreeType library)
