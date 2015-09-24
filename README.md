@@ -25,7 +25,7 @@ java -cp playground-1.0-SNAPSHOT.jar PakPacker
 ```
 rmdir /s /q target
 mkdir target\classes
-javac -d target/classes -encoding utf-8 src/main/java/*.java src/main/java/test.ufw/*.java
+javac -d target/classes -encoding utf-8 src/main/java/*.java src/main/java/ufw/*.java
 set CLASSPATH=target/classes
 java PakPacker
 ```
