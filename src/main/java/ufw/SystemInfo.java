@@ -1,7 +1,5 @@
 package ufw;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -14,23 +12,28 @@ public class SystemInfo {
         Log.info("os=" + os);
         Log.info("vm=" + vm);
         Log.info("rt=" + runtime);
+//        Log.info("jh=" + System.getProperty("java.home"));
+//        Log.info("cwd=" + System.getProperty("user.dir"));
+//        Log.info("lang=" + System.getProperty("user.language"));
     }
 
     public static void showClassPath() {
 
-        RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
-        char sep = System.getProperty("path.separator").charAt(0);  //
-        Log.info("classPath(RTMXB)=\n" + rtb.getClassPath().replace(sep, '\n'));
-        // this path is not found in classLoader hierarchy
-        Log.info("bootClassPath(RTMXB)=\n" + rtb.getBootClassPath().replace(sep, '\n'));
-        Log.info("libraryPath(RTMXB)=\n" + rtb.getLibraryPath().replace(sep, '\n'));
-        Log.info("--------");
+        char sep = System.getProperty("path.separator").charAt(0);  // bit ugly but works
 
-        // TODO
-        System.getProperty("java.class.path");
-        System.getProperty("java.library.path");
-        System.getProperty("sun.boot.library.path");
-        System.getProperty("sun.boot.class.path");
+//        RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
+//        Log.info("classPath(RTMXB)=\n" + rtb.getClassPath().replace(sep, '\n'));
+//        // this path is not found in classLoader hierarchy
+//        Log.info("bootClassPath(RTMXB)=\n" + rtb.getBootClassPath().replace(sep, '\n'));
+//        Log.info("libraryPath(RTMXB)=\n" + rtb.getLibraryPath().replace(sep, '\n'));
+//        Log.info("libraryPath(RTMXB)=\n" + rtb.getLibraryPath().replace(sep, '\n'));
+
+        // system properties deliver same results like RuntimeMXBean (plus extra "sun.boot.library.path")
+        Log.info("------- java.class.path:\n" + System.getProperty("java.class.path").replace(sep, '\n'));
+        Log.info("------- java.library.path:\n" + System.getProperty("java.library.path").replace(sep, '\n'));
+        Log.info("------- sun.boot.class.path:\n" + System.getProperty("sun.boot.class.path").replace(sep, '\n'));
+        Log.info("------- sun.boot.library.path:\n" + System.getProperty("sun.boot.library.path").replace(sep, '\n'));
+        Log.info("-------");
 
         // Log.info("java.system.class.loader=" + System.getProperty("java.system.class.loader")); always null?
         ClassLoader cls = ClassLoader.getSystemClassLoader();
@@ -73,7 +76,7 @@ public class SystemInfo {
 
     public static void main(String[] args) {
         show();
-        Log.info("--------");
+        Log.info("-------");
         showClassPath();
     }
 
