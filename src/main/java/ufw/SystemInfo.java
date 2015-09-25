@@ -1,5 +1,7 @@
 package ufw;
 
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -15,6 +17,21 @@ public class SystemInfo {
     }
 
     public static void showClassPath() {
+
+        RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
+        char sep = System.getProperty("path.separator").charAt(0);  //
+        Log.info("classPath(RTMXB)=\n" + rtb.getClassPath().replace(sep, '\n'));
+        // this path is not found in classLoader hierarchy
+        Log.info("bootClassPath(RTMXB)=\n" + rtb.getBootClassPath().replace(sep, '\n'));
+        Log.info("libraryPath(RTMXB)=\n" + rtb.getLibraryPath().replace(sep, '\n'));
+        Log.info("--------");
+
+        // TODO
+        System.getProperty("java.class.path");
+        System.getProperty("java.library.path");
+        System.getProperty("sun.boot.library.path");
+        System.getProperty("sun.boot.class.path");
+
         // Log.info("java.system.class.loader=" + System.getProperty("java.system.class.loader")); always null?
         ClassLoader cls = ClassLoader.getSystemClassLoader();
         dumpClassLoader("system", cls);
@@ -50,7 +67,7 @@ public class SystemInfo {
             for (URL url : urls) {
                 Log.info(prefix + "url: " + url.toString());
             }
-            prefix += prefix;
+            prefix += "parent ";
         }
     }
 
