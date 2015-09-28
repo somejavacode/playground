@@ -16,10 +16,11 @@ public class Launcher {
 
         // new variant
         ProcessBuilder pb = new ProcessBuilder(args);
-        pb.redirectErrorStream(true);
         // this is default: "Indicates that subprocess I/O will be connected to the current Java process over a pipe."
         // pb.redirectOutput(ProcessBuilder.Redirect.PIPE);
         pb.redirectOutput(new File("output.log"));
+//        pb.redirectErrorStream(true);
+        pb.redirectError(new File("error.log"));
         Process p1 = pb.start();
 
 //        Streamer out = new Streamer("stdout", p1.getInputStream(), null);
