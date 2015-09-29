@@ -28,10 +28,16 @@ public class Launcher {
 //        outThread.setDaemon(true); // don't block VM shutdown? maybe
 //        outThread.start();
 
-        // Log.info("started with pid=" + p.getPid());  // TODO: cannot get pid, fixed with JDK9
+        // Log.info("started with pid=" + p1.getPid());  //  JDK9 only
         // http://stackoverflow.com/questions/35842/how-can-a-java-program-get-its-own-process-id
 
+        Thread.sleep(3000);
+
+        p1.destroy();
+
         p1.waitFor();
+
+        Log.info("done");
 
         // old variant
         //Process p = Runtime.getRuntime().exec("cmd.exe");
