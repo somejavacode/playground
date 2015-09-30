@@ -15,6 +15,9 @@ public class TimerTest {
 
         long tolerance = 3;  // allow 30ms error (test with windows 8.1: V1: 348..351, V2: 333)
         long time = t.getDuration() / 1000000;
+        if (System.getProperty("os.name").contains("Windows XP")) {
+            tolerance = 20; // Thread.sleep() has limited precision in XP. assume 15.625ms (real time clock 64Hz)
+        }
 
         Assert.assertTrue(time > duration - tolerance && time < duration + tolerance);
     }
