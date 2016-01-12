@@ -58,10 +58,10 @@ public class HttpRequester {
         int dlSize = 1000000;
         int dlThrottle = 0; // milliseconds every 8k
 
-        // RequestHeader r = new RequestHeader("/testapp/test?echo=33", "GET");
-        // RequestHeader r = new RequestHeader("/testapp/logout.png", "GET");
-        // RequestHeader r = new RequestHeader("/testapp/test?d=128&r=1", "GET"); // 33 random bytes
-        RequestHeader r = new RequestHeader("/testapp/test?d=" + dlSize + "&r=" + seed + "&t=" + dlThrottle, "GET");
+        // RequestHeader r = new RequestHeader("/testapp/test?echo=33", RequestHeader.GET);
+        // RequestHeader r = new RequestHeader("/testapp/logout.png", RequestHeader.GET);
+        // RequestHeader r = new RequestHeader("/testapp/test?d=128&r=1", RequestHeader.GET); // 33 random bytes
+        RequestHeader r = new RequestHeader("/testapp/test?d=" + dlSize + "&r=" + seed + "&t=" + dlThrottle, RequestHeader.GET);
         r.addHeader("Host", host);
 //        r.addHeader("User-Agent", "Mickey Mouse");
 
@@ -96,7 +96,7 @@ public class HttpRequester {
         boolean chunked = true;
         int blockSize = 2048;
         int clientThrottle = 0;
-        r = new RequestHeader("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, "POST");
+        r = new RequestHeader("/testapp/test?u=" + ulSize + "&r=" + seed + "&t=" + ulThrottle, RequestHeader.POST);
         r.addHeader("Host", host);
         r.addHeader("Content-Type", "application/octet-stream");
         if (chunked) {
@@ -472,6 +472,12 @@ public class HttpRequester {
     }
 
     private static class RequestHeader {
+
+        public static final String POST = "POST";
+        public static final String GET = "GET";
+        public static final String HEAD = "HEAD";
+        public static final String PUT = "PUT";
+        public static final String DELETE = "DELETE";
 
         private String url;
         private String method;
