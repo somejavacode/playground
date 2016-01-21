@@ -18,7 +18,7 @@ public class RandomOutputStream extends OutputStream {
      * @param seed seed for random
      * @param length number of expected bytes
      */
-    public RandomOutputStream(int seed, int length) {
+    public RandomOutputStream(long seed, int length) {
         this.random = new RandomBytes(seed);
         this.length = length;
         this.count = 0;

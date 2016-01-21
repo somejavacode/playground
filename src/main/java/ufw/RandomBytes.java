@@ -19,7 +19,7 @@ public class RandomBytes {
      * create RandomBytes with given seed
      * @param seed seed for Random
      */
-    public RandomBytes(int seed) {
+    public RandomBytes(long seed) {
         this.random = new Random(seed);
         this.lastRand = random.nextInt();
         this.lastRandPos = 0;
@@ -79,7 +79,7 @@ public class RandomBytes {
      * @param seed seed for Random
      * @return random array
      */
-    public static byte[] create(int size, int seed) {
+    public static byte[] create(int size, long seed) {
         RandomBytes rand = new RandomBytes(seed);
         byte[] buffer = new byte[size];
         rand.nextBytes(buffer);
@@ -93,7 +93,7 @@ public class RandomBytes {
      * @param size expected length
      * @param seed seed for Random
      */
-    public static void verify(byte[] random, int size, int seed) {
+    public static void verify(byte[] random, int size, long seed) {
         Validate.isTrue(random.length == size, "wrong size of random bytes.");
         RandomBytes rand = new RandomBytes(seed);
         byte[] buffer = new byte[size];

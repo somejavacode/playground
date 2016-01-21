@@ -18,7 +18,7 @@ public class RandomInputStream extends InputStream {
      * @param seed seed for random
      * @param length number of bytes to deliver
      */
-    public RandomInputStream(int seed, int length) {
+    public RandomInputStream(long seed, int length) {
         this.random = new RandomBytes(seed);
         this.length = length;
         this.count = 0;

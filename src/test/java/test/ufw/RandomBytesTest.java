@@ -12,7 +12,7 @@ public class RandomBytesTest {
 
     @Test
     public void testSingleByte() {
-        int seed = 12;
+        long seed = 12;
         RandomBytes r = new RandomBytes(seed);
         byte b1 = r.nextByte();
         byte b2 = r.nextByte();
@@ -32,7 +32,7 @@ public class RandomBytesTest {
 
     @Test
     public void testRanges() {
-        int seed = 12;
+        long seed = 12;
         RandomBytes r = new RandomBytes(seed);
         byte[] bytes = new byte[15];
         r.nextBytes(bytes);
@@ -73,7 +73,7 @@ public class RandomBytesTest {
 
     @Test
     public void testSingleByteFail() {
-        int seed = 12;
+        long seed = 12;
         Random r = new Random(seed);
         byte b1 = nextByte(r);
         byte b2 = nextByte(r);
@@ -108,7 +108,7 @@ public class RandomBytesTest {
     public void testRandomBytes() {
 
         int length = 333;
-        int seed = 4;
+        long seed = 4;
 
         byte[] rand = RandomBytes.create(length, seed);
         RandomBytes.verify(rand, length, seed);
