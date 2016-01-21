@@ -21,6 +21,12 @@ public class DiskTest {
         if (args.length > 0) {
             mega = Integer.parseInt(args[0]);
         }
+        if (args.length > 1) {
+            loops = Integer.parseInt(args[1]);
+            if (loops == 0) {
+                loops = Integer.MAX_VALUE;
+            }
+        }
 
         String fileName = "testfile_" + mega + "M";
 
