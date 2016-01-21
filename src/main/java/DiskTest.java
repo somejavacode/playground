@@ -1,4 +1,3 @@
-import ufw.RandomBytes;
 import ufw.Timer;
 import ufw.Validate;
 
@@ -43,10 +42,17 @@ public class DiskTest {
 
         int count = size / blockSize; // assume "int"
 
+
+        Timer t = new Timer("generator speed for " + mega + "MB", false);
+        for (int bl = 0; bl < count; bl++) {
+            getBlock(bl, blockSize, seedOffset);
+        }
+        t.stop(true);
+
         for (int loop = 0; loop < loops; loop++) {
 
             // linear write
-            Timer t = new Timer("linear write " + mega + "MB", true);
+            t = new Timer("linear write " + mega + "MB", true);
             for (int bl = 0; bl < count; bl++) {
                 writeBlock(raf, bl, blockSize, seedOffset);
             }
@@ -61,24 +67,37 @@ public class DiskTest {
         }
 
         raf.close();
-
-
-
         // MappedByteBuffer might be an alternative
 
     }
 
     private static void writeBlock(RandomAccessFile raf, int bl, int blockSize, int seedOffset) throws Exception {
-        byte[] block = RandomBytes.create(blockSize, bl + seedOffset);
+        byte[] block = getBlock(bl, blockSize, seedOffset);
         raf.seek(bl * blockSize);  // todo: check overhead in case of linear read
         raf.write(block);
     }
 
     private static void validateBlock(RandomAccessFile raf, int bl, int blockSize, int seedOffset) throws Exception {
-        byte[] block = RandomBytes.create(blockSize, bl + seedOffset);
+        byte[] block = getBlock(bl, blockSize, seedOffset);
         raf.seek(bl * blockSize);  // todo: check overhead in case of linear read
         byte[] readBytes = new byte[blockSize];
         raf.read(readBytes);
         Validate.isTrue(Arrays.equals(block, readBytes));
     }
+
+    private static byte[] getBlock(int bl, int size, int seedOffset) {
+        // too slow. return RandomBytes.create(size, bl + seedOffset);
+        byte[] bytes = new byte[size];
+
+        // just create any unique array content
+        int pos = bl % (size / 2);
+        int value = bl + seedOffset;
+        bytes[pos++] = (byte) (value & 0xFF);
+        bytes[pos++] = (byte) (value >> 8 & 0xFF);
+        bytes[pos++] = (byte) (value >> 16 & 0xFF);
+        bytes[pos++] = (byte) (value >> 24 & 0xFF);
+
+        return bytes;
+    }
+
 }
