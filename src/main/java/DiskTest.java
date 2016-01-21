@@ -13,14 +13,15 @@ public class DiskTest {
 
     public static void main(String[] args) throws Exception {
         int mega = 10;
-        int size = mega * 1024 * 1024;
         int blockSize = 8 * 1024;
         int seedOffset = 2351116;
-        int loops = 1;
 
         if (args.length > 0) {
             mega = Integer.parseInt(args[0]);
         }
+        int size = mega * 1024 * 1024;
+
+        int loops = 1;
         if (args.length > 1) {
             loops = Integer.parseInt(args[1]);
             if (loops == 0) {
