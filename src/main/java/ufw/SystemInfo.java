@@ -2,19 +2,35 @@ package ufw;
 
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.TimeZone;
 
 public class SystemInfo {
 
     public static void show() {
+        show(false);
+    }
+    public static void show(boolean extended) {
         String os = System.getProperty("os.name") + " (" + System.getProperty("os.arch") + ", " + System.getProperty("os.version") + ")";
         String runtime = System.getProperty("java.runtime.name") + " (" + System.getProperty("java.runtime.version") + ")";
         String vm = System.getProperty("java.vm.name") + " (" + System.getProperty("java.vm.version") + ", " + System.getProperty("java.vm.info") + ")";
         Log.info("os=" + os);
         Log.info("vm=" + vm);
         Log.info("rt=" + runtime);
-//        Log.info("jh=" + System.getProperty("java.home"));
-//        Log.info("cwd=" + System.getProperty("user.dir"));
-//        Log.info("lang=" + System.getProperty("user.language"));
+        if (extended) {
+            // some properties that usually make software system dependent
+            showProperty("file.encoding");
+            showProperty("user.language");
+            showProperty("user.language.format");
+            // showProperty("user.timezone");  // why is this null? this is only for overriding
+            Log.info("timezone=" + TimeZone.getDefault().getID());
+            showProperty("user.dir");  // current working directory
+            showProperty("user.home");
+            showProperty("java.home");
+        }
+    }
+
+    private static void showProperty(String name) {
+        Log.info(name + "=" + System.getProperty(name));
     }
 
     public static void showClassPath() {
@@ -75,7 +91,7 @@ public class SystemInfo {
     }
 
     public static void main(String[] args) {
-        show();
+        show(true);
         Log.info("-------");
         showClassPath();
     }
