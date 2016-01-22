@@ -10,6 +10,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -17,7 +19,7 @@ import java.net.SocketAddress;
 
 /**
  * java tool inspired by the unix tool netcat https://en.wikipedia.org/wiki/Netcat<br/>
- * TODO: add udp, add multi-cast
+ * TODO: add multi-cast
  */
 public class NetCatJava {
 
@@ -27,12 +29,20 @@ public class NetCatJava {
         // <host> <port> (client, no -l)
         // -of output file (if omitted use stdout)
         // -if input file (if omitted use stdin)
+        // --udp use udp instead of tcp
 
         Args parsedArgs = new Args(args);
 
+        // server
         int listenPort = parsedArgs.getIntValue("l");
+        // client
+        String host = parsedArgs.getExtraValue(0);
+        int port = parsedArgs.getExtraIntValue(1);
+
         String outFile = parsedArgs.getValue("of");
         String inFile = parsedArgs.getValue("if");
+        boolean udp = parsedArgs.hasFlag("udp");
+
 
         if (inFile != null && !new File(inFile).exists()) {
             throw new RuntimeException("input file not found: " + inFile);
@@ -43,21 +53,42 @@ public class NetCatJava {
 //        }
 
         if (args.length < 2) {
-            Log.info("NetCatJava -l <listenPort>|<remoteServer> <remotePort> [-of <outputFile>][-if <inputFile>]");
+            Log.info("NetCatJava [--udp] -l <listenPort>|<remoteServer> <remotePort> [-of <outputFile>][-if <inputFile>]");
             return;
         }
 
-        if (listenPort > 0) {
-            // server
+        if (udp) {
+            DatagramSocket udpSocket = null;
+            int udpMax = 1024;
+            int remotePort = port;
+
+            if (listenPort > 0) {
+                udpSocket = new DatagramSocket(listenPort);
+                byte[] buf = new byte[udpMax];
+                DatagramPacket recPacket = new DatagramPacket(buf, udpMax);
+                udpSocket.receive(recPacket);
+                remotePort = recPacket.getPort();  // is this source port?
+
+            }
+            else {
+                udpSocket = new DatagramSocket(port);
+                byte[] buf = new byte[udpMax];
+                DatagramPacket sendPacket = new DatagramPacket(buf, udpMax);
+                // TODO
+
+            }
+
+
+        }
+
+        else if (listenPort > 0) {
+            // tcp server
             ServerSocket socket = new ServerSocket(listenPort);
             // "cheap" single accept
             Socket s = socket.accept();
             handleSocketStreams(outFile, inFile, s);
         }
         else {
-            // client
-            String host = parsedArgs.getExtraValue(0);
-            int port = parsedArgs.getExtraIntValue(1);
             int connectTimeout = 5000;  // 5s
             SocketAddress socketAddress = new InetSocketAddress(host, port);
             Socket s = new Socket();
