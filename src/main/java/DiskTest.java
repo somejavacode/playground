@@ -11,10 +11,9 @@ import java.util.Arrays;
 public class DiskTest {
 
     public static void main(String[] args) throws Exception {
-        int mega = 10;
-        int blockSize = 8 * 1024;
         int seedOffset = 2351116;
 
+        int mega = 10;
         if (args.length > 0) {
             mega = Integer.parseInt(args[0]);
         }
@@ -28,6 +27,17 @@ public class DiskTest {
             }
         }
 
+        int blockSizeKilo = 8;
+        if (args.length > 2) {
+            blockSizeKilo = Integer.parseInt(args[2]);
+        }
+        int blockSize = blockSizeKilo * 1024;
+
+        String mode = "rw";  // crappy magic Strings
+        if (args.length > 3) {
+            mode = args[3];
+        }
+
         String fileName = "testfile_" + mega + "M";
 
         // clean up
@@ -36,12 +46,11 @@ public class DiskTest {
             Validate.isTrue(file.delete(), "failed to delete existing file " + fileName);
         }
 
-        // todo: is it threadsafe?
-        RandomAccessFile raf = new RandomAccessFile(fileName, "rw");  // mode: crappy magic Strings
+        // todo: is it thread safe?
+        RandomAccessFile raf = new RandomAccessFile(fileName, mode);
         raf.setLength(size);
 
         int count = size / blockSize; // assume "int"
-
 
         Timer t = new Timer("generator speed for " + mega + "MB", false);
         for (int bl = 0; bl < count; bl++) {
