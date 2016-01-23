@@ -40,10 +40,17 @@ public class LoadRamp {
             long time = System.currentTimeMillis() - start;
             Log.info("fibonacci(" + fibRun + ") time: " + time + "ms");
 
+            if (args.length > 2) {
+                // third argument: number of burn threads
+                int burnThreads = Integer.parseInt(args[2]);
+                while (true) {
+                    fibonacciMulti(fibRun, burnThreads, time);
+                }
+            }
+
             fibonacciMulti(fibRun, 2, time);
             fibonacciMulti(fibRun, 4, time);
             fibonacciMulti(fibRun, 8, time);
-            // fibonacciMulti(fibRun, 16, time);
         }
         else if ("M".equals(rampType)) {
 
