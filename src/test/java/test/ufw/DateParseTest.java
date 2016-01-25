@@ -106,7 +106,7 @@ public class DateParseTest {
         for (int i = 0; i < count; i++) {
             sdf.format(now);
         }
-        t.stop(true); // 2900ms
+        t.stop(true);
 
         count *= 10;
 
@@ -114,7 +114,7 @@ public class DateParseTest {
         for (int i = 0; i < count; i++) {
             HttpDateTool.formatSync(millis);
         }
-        t.stop(true);  // 1150ms (own parseInt), 1250ms (Integer.parseInt)  speedup: 25+
+        t.stop(true);
     }
 
 }
