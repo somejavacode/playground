@@ -31,7 +31,39 @@
             <scope>test</scope>
         </dependency>
 
-
     </dependencies>
+
+    <profiles>
+        <profile>
+            <!-- activate coverage report with -Pjacoco, find results in target/site/jacoco -->
+            <id>jacoco</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>0.7.6.201602180812</version>
+                        <executions>
+                            <execution>
+                                <id>default-prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                            <execution>
+                                <id>default-report</id>
+                                <!-- run report generation in post-integration-test phase instead of prepare-package
+                                to consider unit and integration test results -->
+                                <phase>post-integration-test</phase>
+                                <goals>
+                                    <goal>report</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
