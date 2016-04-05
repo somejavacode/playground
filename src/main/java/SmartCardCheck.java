@@ -2,9 +2,13 @@ import ufw.Hex;
 import ufw.Log;
 
 import javax.smartcardio.Card;
+import javax.smartcardio.CardChannel;
 import javax.smartcardio.CardNotPresentException;
 import javax.smartcardio.CardTerminal;
+import javax.smartcardio.CommandAPDU;
+import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
+import java.util.Arrays;
 import java.util.List;
 
 public class SmartCardCheck {
@@ -51,14 +55,42 @@ public class SmartCardCheck {
         Log.info("card: " + card);  // not that much info in toString(). reader, protocol, state
 
         // list of ATRs: http://ludovic.rousseau.free.fr/softwares/pcsc-tools/smartcard_list.txt
-        Log.info("card ATR bytes=" + Hex.toString(card.getATR().getBytes()));
-        Log.info("card ATR historical bytes=" + Hex.toString(card.getATR().getHistoricalBytes()));
+        byte[] atr = card.getATR().getBytes();
+        Log.info("card ATR bytes=" + Hex.toString(atr));
+        // "historical bytes" are contained in "bytes"
+        // Log.info("card ATR historical bytes=" + Hex.toString(card.getATR().getHistoricalBytes()));
 
+        // Austrian "e-Card" special Version of Starcos 3.1
+        byte[] sv1 = Hex.fromString("3BBD18008131FE45805102670414B10101020081053D");
+        // Austrian "e-Card" of the 4th generation.
+        byte[] sv2 = Hex.fromString("3BDF18008131FE588031B05202046405C903AC73B7B1D422");
 
-//        CardChannel channel = card.getBasicChannel();
-//        byte[] c1 = {0x00, 0x00, 0x00, 0x00};
-//        ResponseAPDU r = channel.transmit(new CommandAPDU(c1));
-//        Log.info("response: " + Hex.toString((r.getBytes())));
-//        card.disconnect(false);
+        if (Arrays.equals(atr, sv1) ||Arrays.equals(atr, sv2)) {
+            // try some commands...
+            Log.info("got e-card. try some commands.");
+            CardChannel channel = card.getBasicChannel();
+
+            processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x04, 0x00, Hex.fromString("D040000017010101"), 0xff));
+
+            processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x02, 0x04, Hex.fromString("EF01"), 0xff));
+
+            ResponseAPDU resp = processAPDU(channel, new CommandAPDU(0x00, 0xb0, 0x00, 0x00, 0xff));
+
+            byte[] data = resp.getData();
+            Log.info("asn1 data from card: " + Hex.toString(data));
+            // TODO: asn1 decoding
+
+            card.disconnect(false);
+        }
+    }
+
+    private static ResponseAPDU processAPDU(CardChannel channel, CommandAPDU apdu) throws Exception {
+        Log.info("request:  " + Hex.toString(apdu.getBytes()));
+        ResponseAPDU r = channel.transmit(apdu);
+        Log.info("response: " + Hex.toString((r.getBytes())));
+        if (r.getSW() == 0x9000 || r.getSW1() == 0x61 || r.getSW1() == 0x62 || r.getSW1() == 0x63) {
+            return r;
+        }
+        throw new RuntimeException("invalid response status: " + r.getSW());
     }
 }
