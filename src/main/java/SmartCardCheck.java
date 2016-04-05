@@ -44,7 +44,14 @@ public class SmartCardCheck {
         Card card = null;
 
         try {
-            //  the protocol to use ("T=0", "T=1", or "T=CL"), or "*" to connect using any available protocol.
+            // javadoc "protocol": the protocol to use ("T=0", "T=1", or "T=CL"), or "*" to connect using any available protocol.
+            card = terminal.connect("*");
+        }
+        catch (CardNotPresentException ex) {
+            Log.info("no card present. waiting 20s");
+            terminal.waitForCardPresent(20000);
+        }
+        try {
             card = terminal.connect("*");
         }
         catch (CardNotPresentException ex) {
