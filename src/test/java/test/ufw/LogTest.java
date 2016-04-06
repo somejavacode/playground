@@ -52,7 +52,7 @@ public class LogTest {
     @Test
     public void testUmlauts() throws Exception {
         String message = "Hell\u00f6 \u00dcmlauts.";
-        Log.info(message);  // this fails in windoze cmd.exe shell with default encoding. see ConsoleEncodingTest
+        Log.info(message);  // this fails in "mvn test" (surefire/junit) command line. see ConsoleEncodingTest
 
         // enforce UTF-8 when writing to file
         Log.setPs(new PrintStream(new FileOutputStream(TEMP_DIR + "test_uml.log"), true, "UTF-8"));

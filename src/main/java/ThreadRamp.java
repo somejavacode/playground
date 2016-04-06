@@ -3,9 +3,9 @@ import ufw.Log;
 import java.util.ArrayList;
 
 /**
- * note: with JDK8 will not use non-heap memory for threads (i.e. stacks?). </br>
- * limiting thread based memory is only possibly by limiting threads.
- * changing stack size (e.g. -Xss256k) does not change initial memory behavior.
+ * note: with JDK8 will not use non-heap memory for threads (i.e. stacks?).<br/>
+ * limiting thread based memory is only possibly by limiting threads.<br/>
+ * changing stack size (e.g. -Xss256k) does not change initial memory behavior.<br/>
  * no way to find out (default) stack size. (could estimate by depth of infinite recursion).
  */
 public class ThreadRamp {
@@ -68,7 +68,7 @@ public class ThreadRamp {
         private int loops;
         private boolean log;
 
-        public Runner(String name, int sleepTime, int loops, boolean log) {
+        Runner(String name, int sleepTime, int loops, boolean log) {
             this.name = name;
             this.sleepTime = sleepTime;
             this.loops = loops;
