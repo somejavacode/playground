@@ -1,3 +1,5 @@
+import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.util.ASN1Dump;
 import ufw.Hex;
 import ufw.Log;
 
@@ -8,7 +10,9 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
+import java.io.ByteArrayInputStream;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class SmartCardCheck {
@@ -72,7 +76,7 @@ public class SmartCardCheck {
         // Austrian "e-Card" of the 4th generation.
         byte[] sv2 = Hex.fromString("3BDF18008131FE588031B05202046405C903AC73B7B1D422");
 
-        if (Arrays.equals(atr, sv1) ||Arrays.equals(atr, sv2)) {
+        if (Arrays.equals(atr, sv1) || Arrays.equals(atr, sv2)) {
             // try some commands...
             Log.info("got e-card. try some commands.");
             CardChannel channel = card.getBasicChannel();
@@ -84,11 +88,43 @@ public class SmartCardCheck {
             ResponseAPDU resp = processAPDU(channel, new CommandAPDU(0x00, 0xb0, 0x00, 0x00, 0xff));
 
             byte[] data = resp.getData();
-            Log.info("asn1 data from card: " + Hex.toString(data));
-            // TODO: asn1 decoding
-
             card.disconnect(false);
+            Log.info("asn1 data from card: " + Hex.toString(data));
+            ASN1InputStream ais = new ASN1InputStream(new ByteArrayInputStream(data));
+            // original code used "while", but fails for old e-card with "java.io.IOException: unexpected end-of-contents marker"
+            // all data returned with first "readObject()"
+            if (ais.available() > 0) {
+                ASN1Primitive obj = ais.readObject();
+                Log.info("asn1 content decoded:\n" + ASN1Dump.dumpAsString(obj, true));
+                Log.info("asn1 via oid: surname=" + getByOid(obj, "2.5.4.4"));
+                Log.info("asn1 via oid: givenName=" + getByOid(obj, "2.5.4.42"));
+                Log.info("asn1 via oid: dateOfBirth=" + getByOid(obj, "1.3.6.1.5.5.7.9.1"));
+                Log.info("asn1 via oid: svNr=" + getByOid(obj, "1.2.40.0.10.1.4.1.1"));
+            }
+            ais.close();
         }
+    }
+
+    private static Object getByOid(ASN1Primitive obj, String oidMatch) throws Exception {
+        if (obj instanceof ASN1Sequence) {
+            // this code is rather "optimistic" when it comes to casting...
+            Iterator<ASN1Encodable> iterator = ((ASN1Sequence) obj).iterator();
+            while (iterator.hasNext()) {
+                ASN1Encodable encodable = iterator.next();  // knowing...
+                Iterator<ASN1Encodable> iterator2 = ((ASN1Sequence) encodable).iterator();
+                ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) iterator2.next();
+                if (oid.getId().equals(oidMatch)) {
+                    DLSet set = (DLSet) iterator2.next();
+                    ASN1Encodable value = set.iterator().next();
+                    if (value instanceof ASN1GeneralizedTime) { // fix missing toString
+                        return ((ASN1GeneralizedTime) value).getDate();
+                    }
+                    return value;
+                }
+            }
+            return "not found";
+        }
+        else return "not found";
     }
 
     private static ResponseAPDU processAPDU(CardChannel channel, CommandAPDU apdu) throws Exception {
