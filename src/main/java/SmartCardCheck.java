@@ -1,4 +1,10 @@
-import org.bouncycastle.asn1.*;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1GeneralizedTime;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.DLSet;
 import org.bouncycastle.asn1.util.ASN1Dump;
 import ufw.Hex;
 import ufw.Log;
@@ -25,8 +31,8 @@ public class SmartCardCheck {
         List<CardTerminal> terminals = null;
 
         try {
-            // no proper way to find out that card reader is not plugged in (or does not exist)?
-            // terminals.isEmpty() not working properly..
+            // no proper way to find out that card reader (aka terminal) is not plugged in (or does not exist)?
+            // terminals.isEmpty() not always working ..
             // this throws: sun.security.smartcardio.PCSCException: SCARD_E_NO_READERS_AVAILABLE
             terminals = factory.terminals().list();
         }
@@ -37,6 +43,11 @@ public class SmartCardCheck {
             return;
         }
 
+        if (terminals.isEmpty()) {
+            Log.info("found no terminal."); // second possible "no terminal" case.
+            return;
+        }
+
         if (terminals.size() > 1) {
             Log.info("found " + terminals.size() + " terminals (using first): " + terminals);
         }
@@ -44,7 +55,6 @@ public class SmartCardCheck {
         CardTerminal terminal = terminals.get(0);
         Log.info("using terminal: " + terminal);
 
-        // establish a connection with the card
         Card card = null;
 
         try {
