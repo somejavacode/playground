@@ -70,6 +70,48 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <!-- create executable jar with "-Pshade", result: target/main.jar -->
+            <id>shade</id>
+            <build>
+                <finalName>main</finalName>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <dependencyReducedPomLocation>target/dependency-reduced-pom.xml
+                                    </dependencyReducedPomLocation>
+                                    <transformers>
+                                        <transformer
+                                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>SmartCardCheck</mainClass>
+                                        </transformer>
+                                    </transformers>
+                                    <filters>
+                                        <filter>
+                                            <!-- filter asn1 only to slim down and avoid signature problem with shaded crypto provider:
+                                                 "java.lang.SecurityException: Invalid signature file digest for Manifest main attributes" -->
+                                            <artifact>org.bouncycastle:bcprov-jdk15on</artifact>
+                                            <includes>
+                                                <include>org/bouncycastle/asn1/**</include>
+                                                <include>org/bouncycastle/util/**</include>
+                                            </includes>
+                                        </filter>
+                                    </filters>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
 </project>
