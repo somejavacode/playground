@@ -16,7 +16,8 @@ import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 import java.io.ByteArrayInputStream;
-import java.util.Arrays;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.util.Iterator;
 import java.util.List;
 
@@ -57,7 +58,6 @@ public class SmartCardCheck {
         Card card = null;
         boolean repeat = true;  // endless
         int cardWait = 20000; // 20s
-
         while (repeat) {
             // wait for card if necessary
             if (!terminal.isCardPresent()) {
@@ -83,26 +83,21 @@ public class SmartCardCheck {
             // "historical bytes" are contained in "bytes"
             // Log.info("card ATR historical bytes=" + Hex.toString(card.getATR().getHistoricalBytes()));
 
-            // Austrian "e-Card" special Version of Starcos 3.1
-            byte[] sv1 = Hex.fromString("3BBD18008131FE45805102670414B10101020081053D");
-            // Austrian "e-Card" of the 4th generation.
-            byte[] sv2 = Hex.fromString("3BDF18008131FE588031B05202046405C903AC73B7B1D422");
-            // Austrian "e-card" G3 (running StarCOS 3.4 by Giesecke & Devrient)
-            byte[] sv3 = Hex.fromString("3BDD96FF81B1FE451F038031B052020364041BB422810518");
-
             Log.setLevel(Log.Level.INFO);  // set DEBUG to get all detail data (PDUs, full ASN1)
 
-            if (Arrays.equals(atr, sv1) || Arrays.equals(atr, sv2) || Arrays.equals(atr, sv3)) {
-                Log.info("got e-card. try to read some data.");
-                CardChannel channel = card.getBasicChannel();
+            CardChannel channel = card.getBasicChannel();
 
-                // try some APDUs. see: http://demo.a-sit.at/smart-card-applet/
-                processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x04, 0x00, Hex.fromString("D040000017010101"), 0xff));
-                processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x02, 0x04, Hex.fromString("EF01"), 0xff));
-                ResponseAPDU resp = processAPDU(channel, new CommandAPDU(0x00, 0xb0, 0x00, 0x00, 0xff));
+            String owner = "";
+            // try some AIDs
+            ResponseAPDU r;
+            processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x00, 0x0c, 0x00), true);
+            r = processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x04, 0x00, Hex.fromString("D040000017010101"), 0xff), false);
+            if (isOK(r)) {
+                // see: http://demo.a-sit.at/smart-card-applet/
+                processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x02, 0x04, Hex.fromString("EF01"), 0xff), true);
+                ResponseAPDU resp = processAPDU(channel, new CommandAPDU(0x00, 0xb0, 0x00, 0x00, 0xff), true);
 
                 byte[] data = resp.getData();
-                card.disconnect(false);
                 Log.debug("asn1 data from card: " + Hex.toString(data));
                 ASN1InputStream ais = new ASN1InputStream(new ByteArrayInputStream(data));
                 // original code used "while", but fails for old e-card with "java.io.IOException: unexpected end-of-contents marker"
@@ -114,9 +109,28 @@ public class SmartCardCheck {
                     Log.info("givenName=   " + getByOid(obj, "2.5.4.42"));
                     Log.info("dateOfBirth= " + getByOid(obj, "1.3.6.1.5.5.7.9.1"));
                     Log.info("svNr=        " + getByOid(obj, "1.2.40.0.10.1.4.1.1"));
+                    owner = getByOid(obj, "2.5.4.4") + "_" + getByOid(obj, "2.5.4.42");
                 }
                 ais.close();
             }
+
+            // try next application
+            processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x00, 0x0c, 0x00), true);
+            r = processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x04, 0x00, Hex.fromString("D040000017001201"), 0xff), false);
+            if (isOK(r)) {
+                readAsn1(channel, "C000", owner + "_Qual.cer");
+            }
+
+            // try next application
+            processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x00, 0x0c, 0x00), true);
+            r = processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x04, 0x00, Hex.fromString("D040000017001301"), 0xff), false);
+            if (isOK(r)) {
+                readAsn1(channel, "2F01", owner + "_Simple.cer");
+            }
+
+            // finally disconnect card
+            card.disconnect(false);
+
             Log.info("waiting for card remove....");
             terminal.waitForCardAbsent(cardWait);
             if (terminal.isCardPresent()) {
@@ -124,6 +138,40 @@ public class SmartCardCheck {
                 return;
             }
             Log.info("card was removed.");
+        }
+    }
+
+    private static void readAsn1(CardChannel channel, String fileId, String saveFile) throws Exception {
+        ResponseAPDU r = processAPDU(channel, new CommandAPDU(0x00, 0xa4, 0x02, 0x04, Hex.fromString(fileId), 0xff), false);
+        if (isOK(r)) {
+            int byteNr = 0;
+            // pragmatic array concatenation
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            do {
+                int p1 = byteNr / 256;
+                int p2 = byteNr % 256;
+                ResponseAPDU resp = processAPDU(channel, new CommandAPDU(0x00, 0xb0, p1, p2, 0xFF), true);
+                byte[] data = resp.getData();
+                baos.write(data);
+                if (resp.getSW() != 0x9000) {
+                    break;
+                }
+                byteNr += data.length;
+            }
+            while (true);
+            byte[] data = baos.toByteArray(); // full result
+
+            if (saveFile != null) {
+                FileOutputStream fos = new FileOutputStream(saveFile);
+                fos.write(data);
+                fos.close();
+            }
+
+            ASN1InputStream ais = new ASN1InputStream(new ByteArrayInputStream(data));
+            if (ais.available() > 0) {
+                ASN1Primitive obj = ais.readObject();
+                Log.info("asn1 content qualified certificate:\n" + ASN1Dump.dumpAsString(obj, true));
+            }
         }
     }
 
@@ -146,16 +194,26 @@ public class SmartCardCheck {
             }
             return "not found";
         }
-        else return "not found";
+        else {
+            return "not found";
+        }
     }
 
-    private static ResponseAPDU processAPDU(CardChannel channel, CommandAPDU apdu) throws Exception {
+    private static ResponseAPDU processAPDU(CardChannel channel, CommandAPDU apdu, boolean assumeOK) throws Exception {
         Log.debug("request:  " + Hex.toString(apdu.getBytes()));
         ResponseAPDU r = channel.transmit(apdu);
         Log.debug("response: " + Hex.toString((r.getBytes())));
-        if (r.getSW() == 0x9000 || r.getSW1() == 0x61 || r.getSW1() == 0x62 || r.getSW1() == 0x63) {
-            return r;
+        if (!isOK(r)) {
+            String message = "invalid response status: 0x" + Integer.toHexString(r.getSW());
+            Log.warn(message);
+            if (assumeOK) {
+                throw new RuntimeException(message);
+            }
         }
-        throw new RuntimeException("invalid response status: " + r.getSW());
+        return r;
+    }
+
+    private static boolean isOK(ResponseAPDU r) {
+        return r.getSW() == 0x9000 || r.getSW1() == 0x61 || r.getSW1() == 0x62 || r.getSW1() == 0x63;
     }
 }
