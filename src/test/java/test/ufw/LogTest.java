@@ -1,5 +1,6 @@
 package test.ufw;
 
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -31,6 +32,33 @@ public class LogTest {
         Log.warn("warn text");
         Log.error("error text");
         Log.error("exception text", new RuntimeException("oops"));
+    }
+
+    @Test
+    public void testEnabled() {
+        Log.setLevel(Log.Level.ERROR);
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.DEBUG));
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.INFO));
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.WARN));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.ERROR));
+
+        Log.setLevel(Log.Level.WARN);
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.DEBUG));
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.INFO));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.WARN));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.ERROR));
+
+        Log.setLevel(Log.Level.INFO);
+        Assert.assertFalse(Log.isLevelEnabled(Log.Level.DEBUG));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.INFO));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.WARN));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.ERROR));
+
+        Log.setLevel(Log.Level.DEBUG);
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.DEBUG));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.INFO));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.WARN));
+        Assert.assertTrue(Log.isLevelEnabled(Log.Level.ERROR));
     }
 
     @Test

@@ -34,6 +34,10 @@ public class Log {
         levelNr = level.levelNr;
     }
 
+    public static boolean isLevelEnabled(Level level) {
+        return level.levelNr >= levelNr;
+    }
+
     public static void setPs(PrintStream ps) {
         Log.ps = ps;
     }
