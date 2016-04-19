@@ -1,8 +1,6 @@
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.util.ASN1Dump;
 import ufw.Hex;
 import ufw.Log;
+import ufw.Validate;
 
 import javax.smartcardio.Card;
 import javax.smartcardio.CardChannel;
@@ -10,9 +8,6 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.List;
 
 public class SimCardCheck {
@@ -84,39 +79,69 @@ public class SimCardCheck {
             String owner = "";
             // try some AIDs
             ResponseAPDU r;
+
+            // 3GPP TS 11.11 http://www.3gpp.org/dynareport/1111.htm
+            // -> http://www.etsi.org/deliver/etsi_ts/100900_100999/100977/08.14.00_60/ts_100977v081400p.pdf
+            // 9  Description of the commands
+            // 10 Contents of the Elementary Files (EF)
             // select MF
             r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), false);
             // 9F16  = 16 bytes... SW2 .. length
+            Validate.isTrue(r.getSW1() == 0x9F);
             r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
             Log.info("MF content: " + Hex.toString(r.getData()));
 
-//            // select ICCID
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), false);
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
-//            Log.info("select ICCID response: " + Hex.toString(r.getData()));
-//            // file size
-//            byte size = r.getData()[3];  // knowing, will be 0x0A bytes (Note: code assumes < 256)
-//            // read ICCID
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
-//            Log.info("ICCID content: " + Hex.toString(r.getData()));
+            // Y1: 0000955A3F00010000AAFA010DB304060500838A838A00008383
+            // H1: 00004F583F0001000000000013B303090400838A838A000300004F5800004F58
 
+            // select ICCID (MF level)
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), false);
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
+            Log.info("select ICCID response: " + Hex.toString(r.getData()));
+            // file size
+            byte size = r.getData()[3];  // knowing, will be 0x0A bytes (Note: code assumes < 256)
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
+            Log.info("ICCID content: " + Hex.toString(r.getData()));
 
-//            // select IMSI
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F07"), 0x00), false);
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
-//            Log.info("select IMSI response: " + Hex.toString(r.getData()));
-//            // file size
-//            byte size = r.getData()[3];
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
-//            Log.info("IMSI content: " + Hex.toString(r.getData()));
+            // Y1: 983421902021033974F3,
+            //     8943120902123093473 matches number printed on card
+            // H1: 98347000004120433998
+            //     89430700001402349389 number on card 1402349389
 
+            // select "MF"/"GSM"
+            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), false);
+            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F20"), 0x00), false);
+            // select IMSI (GSM level)
+            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F07"), 0x00), false);
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
+            Log.info("select IMSI response: " + Hex.toString(r.getData()));
+            // file size
+            size = r.getData()[3];
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
+            Log.info("IMSI content: " + Hex.toString(r.getData()));
 
+            // Y1: 082923212802905417
+            //     909232128220094571 imsi: 232128220094571, MCC 12 = Yesss
+
+            // H1: 082923706701906883
+            //     809232077610098638 imsi: 232077610098638, MCC 07 = tele.ring? T-Mobile Austria
 
             // https://en.wikipedia.org/wiki/Mobile_country_code MCC AT: 232, MNC  01: A1, 03: TMO, 12: yesss, more
 
-            // get IMSI (EF imsi)
 
-            // get MSISDN (EF msisdn)
+            // select MF/"Telecom"
+//            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), false);
+//            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F10"), 0x00), false);
+//            // get MSISDN (Telecom level)
+//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F40"), 0x00), false);
+//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
+//            Log.info("select MSISDN response: " + Hex.toString(r.getData()));
+//            // file size
+//            size = r.getData()[3];
+//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
+//            Log.info("MSISDN content: " + Hex.toString(r.getData()));
+
+
 
             // read/write SMS (EF sms)
 
