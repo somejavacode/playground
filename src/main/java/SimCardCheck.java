@@ -8,6 +8,8 @@ import javax.smartcardio.CardTerminal;
 import javax.smartcardio.CommandAPDU;
 import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.List;
 
 public class SimCardCheck {
@@ -37,11 +39,18 @@ public class SimCardCheck {
             return;
         }
 
+        int termNr = 0;
         if (terminals.size() > 1) {
-            Log.info("found " + terminals.size() + " terminals (using first): " + terminals);
+            Log.info("found " + terminals.size() + " terminals:");
+            for (int i = 0; i < terminals.size(); i++) {
+                Log.info(i + ": " + terminals.get(i).getName());
+            }
+            System.out.print("Please select number: ");
+            String input = new BufferedReader(new InputStreamReader(System.in)).readLine();
+            termNr = Integer.parseInt(input);
         }
 
-        CardTerminal terminal = terminals.get(0);
+        CardTerminal terminal = terminals.get(termNr);
         Log.info("using terminal: " + terminal);
 
         Card card = null;
