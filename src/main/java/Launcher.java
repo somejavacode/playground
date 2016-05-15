@@ -7,6 +7,7 @@ import java.lang.management.ManagementFactory;
 
 public class Launcher {
 
+    // test example "java Launcher java ShellTest"
     public static void main(String[] args) throws Exception {
         // just messing around for now, need to test with JDK9
 
@@ -31,13 +32,13 @@ public class Launcher {
         // Log.info("started with pid=" + p1.getPid());  //  JDK9 only
         // http://stackoverflow.com/questions/35842/how-can-a-java-program-get-its-own-process-id
 
-        Thread.sleep(3000);
+        Thread.sleep(10000);
 
         p1.destroy();
 
         p1.waitFor();
 
-        Log.info("done");
+        Log.info("done. exit code=" + p1.exitValue());
 
         // old variant
         //Process p = Runtime.getRuntime().exec("cmd.exe");
