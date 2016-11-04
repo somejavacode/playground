@@ -18,8 +18,8 @@ public class TimerTest {
         if (System.getProperty("os.name").contains("Windows XP")) {
             tolerance = 20; // Thread.sleep() has limited precision in XP. assume 15.625ms (real time clock 64Hz)
         }
-
-        Assert.assertTrue(time > duration - tolerance && time < duration + tolerance);
+        Assert.assertTrue("sleep duration tolerance of " + tolerance + "ms exceeded. sleep " + duration +
+                          " took " + time, time > duration - tolerance && time < duration + tolerance);
     }
 
     @Test
