@@ -21,16 +21,6 @@ mvn clean package
 java -cp playground-1.0-SNAPSHOT.jar PakPacker
 ```
 
-"experimental" without maven. windows variant (linux is homework):
-```
-rmdir /s /q target
-mkdir target\classes
-javac -d target/classes -encoding utf-8 src/main/java/*.java src/main/java/ufw/*.java
-set CLASSPATH=target/classes
-java PakPacker
-```
-
-
 ## useful tools
 
 PakPacker:
