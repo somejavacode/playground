@@ -5,7 +5,6 @@ import ufw.StreamTool;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.text.NumberFormat;
 
 public class RandomFileTool {
 
@@ -27,8 +26,15 @@ public class RandomFileTool {
         }
         else {
             for (int i = 0; i < count; i++) {
-                String fileSeq = file + (seed + i);
-                processFile(args[0], fileSeq, seed + i, size);
+                // format sequence with enough leading zeros
+                int digits = Integer.toString(count).length();
+                String fileSeq = file + String.format("-%0" + digits + "d", i + 1);
+                try {
+                    processFile(args[0], fileSeq, seed + i, size);
+                }
+                catch (Exception e) {
+                    throw new RuntimeException("problem with file " + fileSeq, e);
+                }
             }
         }
     }
