@@ -161,4 +161,54 @@ public class Hex {
         }
     }
 
+    /**
+     * add byte separators to hex string
+     *
+     * @param hexString plain hex string
+     * @param separator separator character
+     * @param bytesPerBlock bytes per separated block
+     * @return hex string with bytes separated
+     */
+    public static String addSeparator(String hexString, char separator, int bytesPerBlock) {
+        Validate.notNull(hexString);
+        int charsPerBlock = bytesPerBlock * 2;
+        Validate.isTrue(hexString.length() > 0);
+        Validate.isTrue(hexString.length() % charsPerBlock == 0, "size does not match bytes per block.");
+        int blocks = hexString.length() / charsPerBlock;
+        StringBuilder result = new StringBuilder(blocks * (bytesPerBlock + 1));
+        result.append(hexString.substring(0, charsPerBlock));
+        for (int i = 1; i < blocks; i++) {
+            result.append(separator);
+            int pos = i * charsPerBlock;
+            result.append(hexString.substring(pos, pos + charsPerBlock));
+        }
+        return result.toString();
+    }
+
+    /**
+     * remove byte separators from hex string
+     *
+     * @param hexString hex string with separators
+     * @param separator separator character
+     * @param bytesPerBlock bytes per separated block
+     * @return plain hex string
+     * @throws RuntimeException in case of missing, wrong or misplaced separators
+     */
+    public static String removeSeparator(String hexString, char separator, int bytesPerBlock) {
+        Validate.notNull(hexString);
+        int charsPerBlock = bytesPerBlock * 2;
+        Validate.isTrue(hexString.length() > charsPerBlock, "requires at least " + charsPerBlock + " characters. got " + hexString);
+        Validate.isTrue((hexString.length() + 1) % (charsPerBlock + 1) == 0, "size does not match bytes per block.");
+        int blocks = (hexString.length() + 1) / (charsPerBlock + 1);
+        StringBuilder result = new StringBuilder(blocks * bytesPerBlock);
+        result.append(hexString.substring(0, charsPerBlock));
+        for (int i = 1; i < blocks; i++) {
+            int pos = i * (charsPerBlock + 1);
+            char sep = hexString.charAt(pos - 1);
+            Validate.isTrue(sep == separator, "Wrong separator. expected=" + separator + " got=" + sep);
+            result.append(hexString.substring(pos, pos + charsPerBlock));
+        }
+        return result.toString();
+    }
+
 }
