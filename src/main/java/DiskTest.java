@@ -38,7 +38,7 @@ public class DiskTest {
             mode = args[3];
         }
 
-        String fileName = "testfile_" + mega + "M";
+        String fileName = "testfile_" + mega + "MOV";
 
         // clean up
         File file = new File(fileName);
@@ -63,14 +63,14 @@ public class DiskTest {
             // linear write
             t = new Timer("linear write " + mega + "MB", true);
             for (int bl = 0; bl < count; bl++) {
-                writeBlock(raf, bl, blockSize, seedOffset);
+                writeBlock(raf, bl, blockSize, seedOffset + loop);
             }
             t.stop(true);
 
             // linear read
             t = new Timer("linear read " + mega + "MB", true);
             for (int bl = 0; bl < count; bl++) {
-                validateBlock(raf, bl, blockSize, seedOffset);
+                validateBlock(raf, bl, blockSize, seedOffset + loop);
             }
             t.stop(true);
         }
@@ -94,11 +94,14 @@ public class DiskTest {
         Validate.isTrue(Arrays.equals(block, readBytes));
     }
 
+    /**  create unique content for each block */
     private static byte[] getBlock(int bl, int size, int seedOffset) {
         // too slow. return RandomBytes.create(size, bl + seedOffset);
         byte[] bytes = new byte[size];
+        byte fillByte = (byte) ((bl + seedOffset) % 256);
+        Arrays.fill(bytes, fillByte);
 
-        // just create any unique array content
+        // add something "significant" content
         int pos = bl % (size / 2);
         int value = bl + seedOffset;
         bytes[pos++] = (byte) (value & 0xFF);

@@ -141,7 +141,7 @@ public class HexTest {
             Log.info("expected exception: " + e);
         }
         try {
-            Hex.removeSeparator("AA:BB:C", separator, bytes); // incomplete byte
+            Hex.removeSeparator("AA:BB:CRE", separator, bytes); // incomplete byte
             Assert.fail();
         }
         catch (Exception e) {

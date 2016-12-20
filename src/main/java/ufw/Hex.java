@@ -7,6 +7,8 @@ public class Hex {
 
     private static final char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
+    public static final String NULL_ARRAY = "nullBytes";
+
     /**
      * static methods only, no instances
      */
@@ -46,6 +48,9 @@ public class Hex {
      * @return the String representation
      */
     public static String toString(byte[] ba) {
+        if (ba == null) {
+            return NULL_ARRAY;
+        }
         return toString(ba, 0, ba.length);
     }
 

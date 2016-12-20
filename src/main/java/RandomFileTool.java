@@ -10,7 +10,7 @@ public class RandomFileTool {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 4) {
-            System.out.println("syntax: create or verify RandomFileTool C|V Filename Seed Size [count]");
+            System.out.println("syntax: create or verify RandomFileTool CRE|V Filename Seed Size [count]");
             return;
         }
         String file = args[1];
