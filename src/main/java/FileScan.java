@@ -11,10 +11,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.StringTokenizer;
+import java.util.*;
 
 public class FileScan {
 
@@ -176,15 +173,48 @@ public class FileScan {
             return;
         }
 
+        boolean useHash = true;
+
         String command = args[0].toLowerCase();
         ArrayList<FileChange> index = null;
+        long lastIndex = 0;
         ArrayList<FileChange> changes = new ArrayList<FileChange>();
 
         String baseDir = ".";  // current directory...
         File infoFile = new File(baseDir + SEP + SCAN_INDEX);
         if (infoFile.exists()) {
-            index = readChanges(infoFile);
+            index = readIndex(infoFile);
             validateDateOrder(index);
+            lastIndex = index.get(index.size() - 1).getDate();
+
+            HashMap<String, FileInfo> expected = new HashMap<String, FileInfo>();
+            for (FileChange fc : index) {
+                FileInfo fi = fc.getFileInfo();
+                String path = fi.getPath();
+                FileInfo fiNew = new FileInfo(fi.getPath(), fi.getSize(), fc.getDate(), fi.getHash());
+                switch (fc.getOperation()) {
+                    case CRE:
+                        // add info, validate that entry is new
+                        Validate.isTrue(expected.put(path, fiNew) == null);
+                        break;
+                    case UPD:
+                        FileInfo old = expected.put(path, fiNew);
+                        Validate.isTrue(old != null);
+                        // more checks?
+                        break;
+                    case MOV:
+                        FileInfo old2 = expected.remove(fc.getOldPath());
+                        Validate.isTrue(old2 != null);
+                        // more checks?
+                        Validate.isTrue(expected.put(path, fiNew) == null);
+                        break;
+                    case DEL:
+                        Validate.isTrue(expected.remove(path) != null);
+                        break;
+                    default:
+                        throw new RuntimeException("unknown operation " + fc.getOperation());
+                }
+            }
         }
 
 
@@ -209,22 +239,38 @@ public class FileScan {
         }
         else if (command.startsWith("u")) { // update index
             ArrayList<FileInfo> files = new ArrayList<FileInfo>();
-            scanFiles(new File(baseDir), files, true);
+            scanFiles(new File(baseDir), files, useHash);
             sortByDate(files);
-//            for (FileInfo f : files) {
-//                System.out.println(f);
-//            }
+
+            // compare index with files to find changes
+
+            // file is  in files  in index
+            // CRE         Y         N     calculate hash, check for MOV ...
+            // DEL         N         Y
+            // UPD         Y         Y     date is younger as in index, calculate hash
+            // ERROR       Y         Y     date is older than in index
+            // OK          Y         Y     date is same as in index, option validate hash
+
+            // sequence of states fore each file CRE [UPD|MOV*] [DEL]  ?? again CRE, same file?
+
+            // aggregate index to expected file list.
+            // go through file list (files older than lastIndex), "consume" expected files (case OK, ERROR)
+
+            //  remaining list of  expected  files: missing files (DEL or MOV)
+
+            //  continue date younger than lastIndex .. case UPD, case CRE (check for MOV)
+                                             // missing and not MOV : DEL
 
             // hack, no "diff", all create...
             for (FileInfo fi : files) {
                 changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
             }
-            writeAppendChanges(infoFile, changes);
+            writeAppendIndex(infoFile, changes);
         }
 
     }
 
-    private static ArrayList<FileChange> readChanges(File file) throws Exception {
+    private static ArrayList<FileChange> readIndex(File file) throws Exception {
         ArrayList<FileChange> changes = new ArrayList<FileChange>();
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), CHARSET));
         String line;
@@ -234,7 +280,7 @@ public class FileScan {
         return changes;
     }
 
-    private static void writeAppendChanges(File file, ArrayList<FileChange> changes) throws Exception {
+    private static void writeAppendIndex(File file, ArrayList<FileChange> changes) throws Exception {
         // this nice cascade is required to control: "append" and "charset".
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file, true), CHARSET));
         for (FileChange fc : changes) {
