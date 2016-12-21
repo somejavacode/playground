@@ -165,58 +165,30 @@ public class FileScan {
 
     public static void main(String[] args) throws Exception {
 
-        args = new String[] {"u"}; // testing
-//        args = new String[] {"l"}; // testing
+//        args = new String[] {"u"}; // testing
+//         args = new String[] {"l"}; // testing
 
         if (args.length == 0) {
+            System.out.println("TODO: show usage");
             // print usage
             return;
         }
 
-        boolean useHash = true;
 
         String command = args[0].toLowerCase();
         ArrayList<FileChange> index = null;
+        ArrayList<FileInfo> merged = null;
         long lastIndex = 0;
-        ArrayList<FileChange> changes = new ArrayList<FileChange>();
 
-        String baseDir = ".";  // current directory...
+        String baseDir = ".";  // current directory
         File infoFile = new File(baseDir + SEP + SCAN_INDEX);
         if (infoFile.exists()) {
+            // read index and create merged file list
             index = readIndex(infoFile);
             validateDateOrder(index);
-            lastIndex = index.get(index.size() - 1).getDate();
-
-            HashMap<String, FileInfo> expected = new HashMap<String, FileInfo>();
-            for (FileChange fc : index) {
-                FileInfo fi = fc.getFileInfo();
-                String path = fi.getPath();
-                FileInfo fiNew = new FileInfo(fi.getPath(), fi.getSize(), fc.getDate(), fi.getHash());
-                switch (fc.getOperation()) {
-                    case CRE:
-                        // add info, validate that entry is new
-                        Validate.isTrue(expected.put(path, fiNew) == null);
-                        break;
-                    case UPD:
-                        FileInfo old = expected.put(path, fiNew);
-                        Validate.isTrue(old != null);
-                        // more checks?
-                        break;
-                    case MOV:
-                        FileInfo old2 = expected.remove(fc.getOldPath());
-                        Validate.isTrue(old2 != null);
-                        // more checks?
-                        Validate.isTrue(expected.put(path, fiNew) == null);
-                        break;
-                    case DEL:
-                        Validate.isTrue(expected.remove(path) != null);
-                        break;
-                    default:
-                        throw new RuntimeException("unknown operation " + fc.getOperation());
-                }
-            }
+            lastIndex = index.get(index.size() - 1).getDate(); // date of last index entry
+            merged = mergeIndex(index);
         }
-
 
         if (command.startsWith("l")) { // list index
             if (index == null) {
@@ -226,52 +198,111 @@ public class FileScan {
             for (FileChange fc : index) {
                 System.out.println(fc.toLine());
             }
-
         }
-        else if (command.startsWith("s")) { // status: list changes
-            // scanFiles(new File(baseDir), changes, index);
-            for (FileChange fc : changes) {
-                System.out.println(fc);
+
+        if (command.startsWith("m")) { // list merged files
+            if (merged == null) {
+                System.out.println(SCAN_INDEX + "not found");
+                return;
+            }
+            for (FileInfo fi : merged) {
+                System.out.println(fi.toLine());
             }
         }
-        else if (command.startsWith("v")) { // validate all hashes
 
-        }
-        else if (command.startsWith("u")) { // update index
-            ArrayList<FileInfo> files = new ArrayList<FileInfo>();
-            scanFiles(new File(baseDir), files, useHash);
-            sortByDate(files);
+//        else if (command.startsWith("v")) { // validate all hashes  "status" will validate hashes.
+//        }
+        else if (command.startsWith("u") || command.startsWith("s")) { // update index (add changes), status (list changes)
 
-            // compare index with files to find changes
+            // current files...
+            long scanTime = System.currentTimeMillis(); // start of scan
+            ArrayList<FileInfo> files = scanFiles(new File(baseDir), true);  // hash all
+            ArrayList<FileChange> changes = new ArrayList<>();
 
-            // file is  in files  in index
-            // CRE         Y         N     calculate hash, check for MOV ...
-            // DEL         N         Y
-            // UPD         Y         Y     date is younger as in index, calculate hash
-            // ERROR       Y         Y     date is older than in index
-            // OK          Y         Y     date is same as in index, option validate hash
-
-            // sequence of states fore each file CRE [UPD|MOV*] [DEL]  ?? again CRE, same file?
-
-            // aggregate index to expected file list.
-            // go through file list (files older than lastIndex), "consume" expected files (case OK, ERROR)
-
-            //  remaining list of  expected  files: missing files (DEL or MOV)
-
-            //  continue date younger than lastIndex .. case UPD, case CRE (check for MOV)
-                                             // missing and not MOV : DEL
-
-            // hack, no "diff", all create...
-            for (FileInfo fi : files) {
-                changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
+            if (merged == null) {
+                // fresh index, all entries are "CRE"
+                for (FileInfo fi : files) {
+                    changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
+                }
             }
-            writeAppendIndex(infoFile, changes);
+            else {
+                // file is  in files  in index
+                // CRE         Y         N     calculate hash, check for MOV ...
+                // DEL         N         Y
+                // UPD         Y         Y     date is younger as in index, calculate hash
+                // ERROR       Y         Y     date is older than in index
+                // OK          Y         Y     date is same as in index, option validate hash
+
+                // sequence of states fore each file CRE [UPD|MOV*] [DEL]  (then start again with CRE)
+
+                // go through file list (files older than lastIndex), "consume" expected files (case OK, ERROR)
+                for (FileInfo fi : files) {
+                    if (fi.getModified() <= lastIndex) { // OK, ERROR, missing
+                        FileInfo match = findMatch(fi, merged, true);
+                        if (match == null) {
+                            continue;
+                        }
+                        if (fi.getModified() == match.getModified() &&
+                                fi.getSize() == match.getSize() &&
+                                Arrays.equals(fi.getHash(), match.getHash())) {
+                            Validate.isTrue(merged.remove(match), "failed to remove: " + match.toString());
+                        }
+                        else {
+                            throw new RuntimeException("got invalid modification. file=" + fi.toString());
+                        }
+                    }
+                    else { // create, update, move
+                        FileInfo match = findMatch(fi, merged, false);
+                        if (match == null) {
+                            // todo: check for move... currently: DEL/CRE
+                            changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
+                        }
+                        else {
+                            // further checks?
+                            changes.add(new FileChange(FileChange.Operation.UPD, fi, fi.getModified()));
+                            Validate.isTrue(merged.remove(match), "failed to remove: " + match.toString());
+                        }
+                    }
+                }
+                // remaining entries...
+                for (FileInfo fi : merged) {
+                    // delete time is unknown, use date of "found missing".
+                    changes.add(new FileChange(FileChange.Operation.DEL, fi, scanTime));
+                }
+
+                //  remaining list of  expected  files: missing files (DEL or MOV)
+
+                //  continue date younger than lastIndex .. case UPD, case CRE (check for MOV)
+                // missing and not MOV : DEL
+            }
+            if (command.startsWith("u")) {  // remove c&w code!
+                // update: write changes to index
+                writeAppendIndex(infoFile, changes);
+            }
+            else {
+                // status: list changes
+                for (FileChange fc : changes) {
+                    System.out.println(fc.toLine());
+                }
+            }
         }
 
     }
 
+    private static FileInfo findMatch(FileInfo file, ArrayList<FileInfo> changes, boolean limit) {
+        for (FileInfo fi : changes) {
+            if (fi.getPath().equals(file.getPath())) {
+                return fi;
+            }
+            if (limit && fi.getModified() > file.getModified()) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     private static ArrayList<FileChange> readIndex(File file) throws Exception {
-        ArrayList<FileChange> changes = new ArrayList<FileChange>();
+        ArrayList<FileChange> changes = new ArrayList<>();
         BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), CHARSET));
         String line;
         while ((line = br.readLine()) != null) {
@@ -290,11 +321,21 @@ public class FileScan {
         writer.close();
     }
 
-    // scan directory recursively, collect changes for all files
-    private static void scanFiles(File dir, ArrayList<FileInfo> files, boolean calculateHash) throws Exception {
+    // scan all files recursively, optional calculate hash, result sorted by change date.
+    private static ArrayList<FileInfo> scanFiles(File dir, boolean calculateHash) throws Exception {
+        ArrayList<FileInfo> files = new ArrayList<>();
+        scanFilesRecursive(dir, files, calculateHash);
+        sortByDate(files);
+        return files;
+    }
+
+    // scan directory recursively
+    private static void scanFilesRecursive(File dir, ArrayList<FileInfo> files, boolean calculateHash) throws Exception {
         Validate.isTrue(dir.exists(), "not found: " + dir);
-        Validate.isTrue(dir.isDirectory(), "not a directory: " + dir);
-        for (File f : dir.listFiles()) {
+        File[] fileArray = dir.listFiles();
+        // Validate.isTrue(dir.isDirectory(), "not a directory: " + dir);
+        Validate.isTrue(fileArray != null, "not a directory: " + dir); // null if not a directory
+        for (File f : fileArray) {
             //  skip ".*" files/dirs
             if (f.getName().startsWith(".")) {  // todo: more generic
                 continue;
@@ -302,14 +343,14 @@ public class FileScan {
 
             if (f.isDirectory()) {
                 // recursive...
-                scanFiles(f, files, calculateHash);
+                scanFilesRecursive(f, files, calculateHash);
             }
             else {
                 byte[] hashValue = null;
                 if (calculateHash) {
                     hashValue = getHash(f);
                 }
-                files.add(new FileInfo(f.getPath(), (int) f.length(), f.lastModified(), hashValue));
+                files.add(new FileInfo(f.getPath(), f.length(), f.lastModified(), hashValue));
             }
         }
     }
@@ -345,5 +386,45 @@ public class FileScan {
             md.update(buffer, 0, bytes);
         }
         return md.digest();
+    }
+
+    // get result list of files based on "merged" index
+    private static ArrayList<FileInfo> mergeIndex(ArrayList<FileChange> index) {
+
+        HashMap<String, FileInfo> expected = new HashMap<>();  // collect FileInfo per path
+
+        // go through change list
+        for (FileChange fc : index) {
+            FileInfo fi = fc.getFileInfo();
+            String path = fi.getPath();
+            // create FileInfo with date of FileChange
+            FileInfo fiNew = new FileInfo(path, fi.getSize(), fc.getDate(), fi.getHash());
+            switch (fc.getOperation()) {
+                case CRE:
+                    // add info, validate that entry is new
+                    Validate.isTrue(expected.put(path, fiNew) == null);
+                    break;
+                case UPD:
+                    FileInfo old = expected.put(path, fiNew);
+                    Validate.isTrue(old != null);
+                    // more checks?
+                    break;
+                case MOV:
+                    FileInfo old2 = expected.remove(fc.getOldPath());
+                    Validate.isTrue(old2 != null);
+                    Validate.isTrue(expected.put(path, fiNew) == null);
+                    // more checks?
+                    break;
+                case DEL:
+                    Validate.isTrue(expected.remove(path) != null);
+                    break;
+                default:
+                    throw new RuntimeException("unknown operation " + fc.getOperation());
+            }
+        }
+        ArrayList<FileInfo> files = new ArrayList<>();
+        files.addAll(expected.values());
+        sortByDate(files);
+        return files;
     }
  }
