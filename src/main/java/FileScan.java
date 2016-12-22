@@ -11,7 +11,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.StringTokenizer;
 
 public class FileScan {
 
@@ -165,13 +170,15 @@ public class FileScan {
 
     public static void main(String[] args) throws Exception {
 
-//        args = new String[] {"u"}; // testing
-//         args = new String[] {"l"}; // testing
-
         if (args.length == 0) {
             System.out.println("TODO: show usage");
             // print usage
             return;
+        }
+
+        String baseDir = ".";  // current directory
+        if (args.length > 1) {
+            baseDir = args[1];
         }
 
 
@@ -180,7 +187,6 @@ public class FileScan {
         ArrayList<FileInfo> merged = null;
         long lastIndex = 0;
 
-        String baseDir = ".";  // current directory
         File infoFile = new File(baseDir + SEP + SCAN_INDEX);
         if (infoFile.exists()) {
             // read index and create merged file list
@@ -237,8 +243,8 @@ public class FileScan {
 
                 // go through file list (files older than lastIndex), "consume" expected files (case OK, ERROR)
                 for (FileInfo fi : files) {
-                    if (fi.getModified() <= lastIndex) { // OK, ERROR, missing
-                        FileInfo match = findMatch(fi, merged, true);
+                    if (fi.getModified() <= lastIndex) { // OK, ERROR, missing (+MOVE!)
+                        FileInfo match = findByPath(fi, merged, true);
                         if (match == null) {
                             continue;
                         }
@@ -252,13 +258,28 @@ public class FileScan {
                         }
                     }
                     else { // create, update, move
-                        FileInfo match = findMatch(fi, merged, false);
+                        FileInfo match = findByPath(fi, merged, false);
                         if (match == null) {
-                            // todo: check for move... currently: DEL/CRE
-                            changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
+                            // move heuristics
+                            // Case A: same name, different path (check also size/content?)
+                            String name = getName(fi.getPath());
+                            FileInfo moved = findName(name, merged);
+                            // Case B: same content ..
+                            // Case C: ???
+                            // TODO clarify move heuristics
+                            if (moved != null) {
+                                FileChange movedInfo = new FileChange(FileChange.Operation.MOV, fi, fi.getModified());
+                                movedInfo.setOldPath(moved.getPath());
+                                changes.add(movedInfo);
+                                Validate.isTrue(merged.remove(moved), "failed to remove: " + moved.toString());
+                            }
+                            else {
+                                changes.add(new FileChange(FileChange.Operation.CRE, fi, fi.getModified()));
+                            }
                         }
                         else {
-                            // further checks?
+                            // same path -> update
+                            // any further checks?
                             changes.add(new FileChange(FileChange.Operation.UPD, fi, fi.getModified()));
                             Validate.isTrue(merged.remove(match), "failed to remove: " + match.toString());
                         }
@@ -275,7 +296,7 @@ public class FileScan {
                 //  continue date younger than lastIndex .. case UPD, case CRE (check for MOV)
                 // missing and not MOV : DEL
             }
-            if (command.startsWith("u")) {  // remove c&w code!
+            if (command.startsWith("u")) { // remove c&w code!
                 // update: write changes to index
                 writeAppendIndex(infoFile, changes);
             }
@@ -289,7 +310,7 @@ public class FileScan {
 
     }
 
-    private static FileInfo findMatch(FileInfo file, ArrayList<FileInfo> changes, boolean limit) {
+    private static FileInfo findByPath(FileInfo file, ArrayList<FileInfo> changes, boolean limit) {
         for (FileInfo fi : changes) {
             if (fi.getPath().equals(file.getPath())) {
                 return fi;
@@ -299,6 +320,20 @@ public class FileScan {
             }
         }
         return null;
+    }
+
+    private static FileInfo findName(String name, ArrayList<FileInfo> changes) {
+        for (FileInfo fi : changes) {
+            if (name.equals(getName(fi.getPath()))) {
+                return fi;
+            }
+        }
+        return null;
+    }
+
+    private static String getName(String path) {
+        int slashPos = path.lastIndexOf("/");
+        return slashPos > 0 ? path.substring(slashPos + 1) : path;
     }
 
     private static ArrayList<FileChange> readIndex(File file) throws Exception {
@@ -322,15 +357,15 @@ public class FileScan {
     }
 
     // scan all files recursively, optional calculate hash, result sorted by change date.
-    private static ArrayList<FileInfo> scanFiles(File dir, boolean calculateHash) throws Exception {
+    private static ArrayList<FileInfo> scanFiles(File baseDir, boolean calculateHash) throws Exception {
         ArrayList<FileInfo> files = new ArrayList<>();
-        scanFilesRecursive(dir, files, calculateHash);
+        scanFilesRecursive(baseDir, baseDir, files, calculateHash);
         sortByDate(files);
         return files;
     }
 
     // scan directory recursively
-    private static void scanFilesRecursive(File dir, ArrayList<FileInfo> files, boolean calculateHash) throws Exception {
+    private static void scanFilesRecursive(File baseDir, File dir, ArrayList<FileInfo> files, boolean calculateHash) throws Exception {
         Validate.isTrue(dir.exists(), "not found: " + dir);
         File[] fileArray = dir.listFiles();
         // Validate.isTrue(dir.isDirectory(), "not a directory: " + dir);
@@ -343,16 +378,41 @@ public class FileScan {
 
             if (f.isDirectory()) {
                 // recursive...
-                scanFilesRecursive(f, files, calculateHash);
+                scanFilesRecursive(baseDir, f, files, calculateHash);
             }
             else {
                 byte[] hashValue = null;
                 if (calculateHash) {
                     hashValue = getHash(f);
                 }
-                files.add(new FileInfo(f.getPath(), f.length(), f.lastModified(), hashValue));
+                files.add(new FileInfo(cleanPath(baseDir, f.getPath()), f.length(), f.lastModified(), hashValue));
             }
         }
+    }
+
+
+    // clean up path: remove prefix, use unix path separator
+    private static String cleanPath(File dir, String path) {
+        String prefix = fixSeparator(dir.getPath());
+        String prefixFull = fixSeparator(dir.getAbsolutePath());  // may contain things like "C:"
+        String pathToClean = fixSeparator(path);
+        String clean1 = stripPrefix(prefixFull, pathToClean);
+        String clean2 = stripPrefix(prefix, clean1);
+        return stripPrefix("/", clean2);
+    }
+
+    private static String stripPrefix(String prefix, String value) {
+        if (value.startsWith(prefix)) {
+            return value.substring(prefix.length());
+        }
+        return value;
+    }
+
+    private static String fixSeparator(String path) {
+        if (SEP.equals("\\")) {
+            return path.replace("\\", "/");
+        }
+        return path;
     }
 
     private static void sortByDate(ArrayList<FileInfo> files) {
