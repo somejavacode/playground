@@ -63,6 +63,19 @@ public class FileScan {
             this.date = date;
         }
 
+        /**
+         * @param operation operation type
+         * @param fileInfo updated/new info for UPD, MOV, CRE. old info for DEL.
+         * @param date operation date
+         * @param oldPath original path
+         */
+        public FileChange(Operation operation, FileInfo fileInfo, long date, String oldPath) {
+            this.operation = operation;
+            this.fileInfo = fileInfo;
+            this.date = date;
+            this.oldPath = oldPath;
+        }
+
         /** parse from line */
         public FileChange(String line) {
             StringTokenizer st = new StringTokenizer(line, SEPARATOR);
@@ -103,10 +116,6 @@ public class FileScan {
 
         public String getOldPath() {
             return oldPath;
-        }
-
-        public void setOldPath(String oldPath) {
-            this.oldPath = oldPath;
         }
     }
 
@@ -243,34 +252,46 @@ public class FileScan {
 
                 // go through file list (files older than lastIndex), "consume" expected files (case OK, ERROR)
                 for (FileInfo fi : files) {
-                    if (fi.getModified() <= lastIndex) { // OK, ERROR, missing (+MOVE!)
+                    if (fi.getModified() <= lastIndex) { // OK, ERROR, MOVE  missing
                         FileInfo match = findByPath(fi, merged, true);
                         if (match == null) {
-                            continue;
+                            FileInfo moved = findByHash(fi.getHash(), merged);  // TODO identical files!!
+                            if (moved != null) {
+                                changes.add(new FileChange(FileChange.Operation.MOV, fi, fi.getModified(), moved.getPath()));
+                                Validate.isTrue(merged.remove(moved), "failed to remove: " + moved.toString());
+                            }
+                            // else error: adding file with "Old" modification date destroys "logic"?
+                            // backdated create
+                            else {
+                                throw new RuntimeException("todo" + fi);
+                            }
                         }
-                        if (fi.getModified() == match.getModified() &&
+                        else if (fi.getModified() == match.getModified() &&
                                 fi.getSize() == match.getSize() &&
                                 Arrays.equals(fi.getHash(), match.getHash())) {
+                            // exactly matching, remove from merged
                             Validate.isTrue(merged.remove(match), "failed to remove: " + match.toString());
                         }
                         else {
-                            throw new RuntimeException("got invalid modification. file=" + fi.toString());
+                            // file changed but has old modification date
+                            throw new RuntimeException("got invalid file. file=" + fi.toString());
                         }
                     }
                     else { // create, update, move
                         FileInfo match = findByPath(fi, merged, false);
                         if (match == null) {
                             // move heuristics
-                            // Case A: same name, different path (check also size/content?)
-                            String name = getName(fi.getPath());
-                            FileInfo moved = findName(name, merged);
-                            // Case B: same content ..
+                            // Case A: same content (aka hash)
+                            FileInfo moved = findByHash(fi.getHash(), merged);
+                            // Case B: same name, different path, different content?
+//                            if (moved == null) {
+//                                String name = getName(fi.getPath());
+//                                moved = findByName(name, merged);
+//                            }
                             // Case C: ???
                             // TODO clarify move heuristics
                             if (moved != null) {
-                                FileChange movedInfo = new FileChange(FileChange.Operation.MOV, fi, fi.getModified());
-                                movedInfo.setOldPath(moved.getPath());
-                                changes.add(movedInfo);
+                                changes.add(new FileChange(FileChange.Operation.MOV, fi, fi.getModified(), moved.getPath()));
                                 Validate.isTrue(merged.remove(moved), "failed to remove: " + moved.toString());
                             }
                             else {
@@ -322,7 +343,17 @@ public class FileScan {
         return null;
     }
 
-    private static FileInfo findName(String name, ArrayList<FileInfo> changes) {
+    private static FileInfo findByHash(byte[] hash, ArrayList<FileInfo> changes) {
+        Validate.notNull(hash);
+        for (FileInfo fi : changes) {
+            if (Arrays.equals(hash, fi.getHash())) {
+                return fi;
+            }
+        }
+        return null;
+    }
+
+    private static FileInfo findByName(String name, ArrayList<FileInfo> changes) {
         for (FileInfo fi : changes) {
             if (name.equals(getName(fi.getPath()))) {
                 return fi;
