@@ -68,12 +68,13 @@ public class HttpRequester {
         byte[] reqBytes = r.getBytes(); // this can be reused for certain benchmarks
 
         // Log.info("req bytes1:\n" + Hex.toStringBlock(reqBytes));
-        Timer t = new Timer("download", true);
+        boolean logTimer = true;
+        Timer t = new Timer("download", logTimer);
         os.write(reqBytes);
 //        os.write(reqBytes);
 //        os.write(reqBytes);  // test 3x pipeline
         os.flush();
-        t.split("request header flush");
+        t.split("request header flush", logTimer);
 
         // interesting: for 3x pipeline: first read one, second read two responses.
 
@@ -81,11 +82,11 @@ public class HttpRequester {
 
         ResponseHeader res = new ResponseHeader();
         res.fromInputStream(is);
-        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">");
+        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">", logTimer);
 
         body = readResponse(is, res.contentLength, true, res.chunked, seed);
         // Log.info("body:\n" + Hex.toStringBlock(body));
-        t.split("response body received");
+        t.split("response body received", logTimer);
 
         //int ulSize = 8333;
         // int ulSize = 83333; // OK
@@ -111,18 +112,18 @@ public class HttpRequester {
 
         t = new Timer("upload", true);
         os.write(reqBytes); // request header
-        t.split("request header write");
+        t.split("request header write", logTimer);
         writeRequest(os, null, ulSize, chunked, seed, blockSize, clientThrottle);
 
 //        os.write(0x32); // surplus byte  // TODO: server does not detect these extra bytes (chunked = false)...
 //        os.write(0x32); // surplus byte
 //        os.write(0x32); // surplus byte
-        t.split("request body written");
+        t.split("request body written", logTimer);
         os.flush();
 
         res = new ResponseHeader();
         res.fromInputStream(is);
-        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">");
+        t.split("response header received <" + res.statusCode + " " + res.statusMessage + ">", logTimer);
         body = readResponse(is, res.contentLength, true, res.chunked, 0);
         // Log.info("body:\n" + Hex.toStringBlock(body)); NPE
         /*

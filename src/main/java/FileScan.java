@@ -1,5 +1,7 @@
 import ufw.FixDateFormat;
 import ufw.Hex;
+import ufw.Log;
+import ufw.Timer;
 import ufw.Validate;
 
 import java.io.BufferedReader;
@@ -152,6 +154,8 @@ public class FileScan {
 
     public static void main(String[] args) throws Exception {
 
+        boolean logTimer = false;  // enable to check performance for large files or sets
+        Timer t = new Timer("main", "read index", logTimer);
         if (args.length == 0) {
             System.out.println("TODO: show usage");
             // print usage
@@ -165,7 +169,7 @@ public class FileScan {
 
         String command = args[0].toLowerCase();
         ArrayList<FileChange> index = null;
-        ArrayList<FileInfo> merged = null;
+        HashMap<String, FileInfo> merged = null;
 
         File infoFile = new File(baseDir + SEP + SCAN_INDEX);
         if (infoFile.exists()) {
@@ -173,11 +177,15 @@ public class FileScan {
             index = readIndex(infoFile);
             validateDateOrder(index);
             merged = mergeIndex(index);
+            t.split("scan", index.size() + " files", logTimer);
+        }
+        else {
+            t.split("scan", "no index found", logTimer);
         }
 
         if (command.startsWith("l")) { // list index
             if (index == null) {
-                System.out.println(SCAN_INDEX + " not found");
+                Log.warn(SCAN_INDEX + " not found");
                 return;
             }
             for (FileChange fc : index) {
@@ -187,19 +195,19 @@ public class FileScan {
 
         if (command.startsWith("m")) { // list merged files
             if (merged == null) {
-                System.out.println(SCAN_INDEX + " not found");
+                Log.warn(SCAN_INDEX + " not found");
                 return;
             }
-            for (FileInfo fi : merged) {
+            for (FileInfo fi : merged.values()) {  // todo sorting?
                 System.out.println(fi.toLine());
             }
         }
         if (command.startsWith("h")) { // summary hash
             if (merged == null) {
-                System.out.println(SCAN_INDEX + " not found");
+                Log.warn(SCAN_INDEX + " not found");
                 return;
             }
-            System.out.println("summary hash: " + Hex.toString(summaryHash(merged)));
+            Log.info("summary hash: " + Hex.toString(summaryHash(merged)));
         }
 
         else if (command.startsWith("u") || command.startsWith("s")) { // update index (add changes), status (list changes)
@@ -208,6 +216,7 @@ public class FileScan {
             // note: during scan files shall not be changed or locked
             ArrayList<FileInfo> files = scanFiles(new File(baseDir));
             long scanTime = System.currentTimeMillis(); // use end of scan.
+            t.split("sort", files.size() + " files", logTimer); // start sort, show files read
 
             // list of detected changes
             ArrayList<FileChange> changes = new ArrayList<>();
@@ -223,7 +232,7 @@ public class FileScan {
 
                 // go through list of current files, "consume" files from index
                 for (FileInfo fi : files) {
-                    FileInfo match = findByPath(fi, merged);
+                    FileInfo match = merged.get(fi.getPath());
                     if (match == null) {
                         changes.add(new FileChange(FileChange.Operation.CRE, fi, scanTime));
                     }
@@ -234,11 +243,11 @@ public class FileScan {
                             changes.add(new FileChange(FileChange.Operation.UPD, fi, scanTime));
                         }
                         // "else" same hash, nothing to do.
-                        Validate.isTrue(merged.remove(match), "failed to remove from list: " + match.toString());
+                        Validate.isTrue(merged.remove(match.getPath()) != null, "failed to remove from map: " + match.toString());
                     }
                 }
                 // remaining entries have been deleted
-                for (FileInfo fi : merged) {
+                for (FileInfo fi : merged.values()) { // todo:sorting?
                     changes.add(new FileChange(FileChange.Operation.DEL, fi, scanTime));
                 }
             }
@@ -252,16 +261,8 @@ public class FileScan {
                     System.out.println(fc);
                 }
             }
+            t.stop(logTimer);
         }
-    }
-
-    private static FileInfo findByPath(FileInfo file, ArrayList<FileInfo> changes) {
-        for (FileInfo fi : changes) {
-            if (fi.getPath().equals(file.getPath())) {
-                return fi;
-            }
-        }
-        return null;
     }
 
     private static ArrayList<FileChange> readIndex(File file) throws Exception {
@@ -366,7 +367,9 @@ public class FileScan {
      * create hash that represents set of all files.
      * Note: files are sorted by path to create same hash for same set of files.
      */
-    private static byte[] summaryHash(ArrayList<FileInfo> files) throws Exception {
+    private static byte[] summaryHash( HashMap<String, FileInfo> files2) throws Exception {
+        ArrayList<FileInfo> files = new ArrayList<>();  // todo: rework?
+        files.addAll(files2.values());
         sortByPath(files);
         MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
         for (FileInfo fi : files) {
@@ -386,7 +389,7 @@ public class FileScan {
     }
 
     /** get result list of files by merging index */
-    private static ArrayList<FileInfo> mergeIndex(ArrayList<FileChange> index) {
+    private static HashMap<String, FileInfo> mergeIndex(ArrayList<FileChange> index) {
 
         HashMap<String, FileInfo> expected = new HashMap<>();  // track FileInfo per path
 
@@ -412,8 +415,6 @@ public class FileScan {
                     throw new RuntimeException("unknown operation " + fc.getOperation());
             }
         }
-        ArrayList<FileInfo> files = new ArrayList<>();
-        files.addAll(expected.values());
-        return files;
+        return expected;
     }
  }

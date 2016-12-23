@@ -31,11 +31,28 @@ public class TimerTest {
 
     @Test
     public void testTimerSplit() throws Exception {
-        Timer t = new Timer("splitting", true);
+        Timer t = new Timer("split test", "lap1", true);
         Thread.sleep(22);
-        t.split("lap1");
+        t.split("lap2", true);
         Thread.sleep(44);
-        t.split("lap2");
+        t.stop(true);
+    }
+
+    @Test
+    public void testTimerSplitMessage() throws Exception {
+        Timer t = new Timer("split test", "lap1", true);
+        Thread.sleep(22);
+        t.split("lap2", "did some things", true);
+        Thread.sleep(44);
+        t.split("lap3", "did more things", true);
+        Thread.sleep(55);
+        t.stop("did final things", true);
+    }
+
+    @Test
+    public void testTimer() throws Exception {
+        Timer t = new Timer("test", true);
+        Thread.sleep(33);
         t.stop(true);
     }
 
