@@ -20,9 +20,9 @@ public class HashBench {
             algorithm = args[0];
         }
 
-        int blockSize = 16384;
+        boolean repeat = false;
         if (args.length > 1) {
-            blockSize = Integer.parseInt(args[1]);
+            repeat = args[1] != null;
         }
 
         long timeLimit = 5; // seconds test time
@@ -30,14 +30,19 @@ public class HashBench {
             timeLimit = Integer.parseInt(args[2]);
         }
 
-        String providerName = "SUN";
+        int blockSize = 16384;
         if (args.length > 3) {
-            providerName = args[3];
+            blockSize = Integer.parseInt(args[3]);
+        }
+
+        String providerName = "SUN";
+        if (args.length > 4) {
+            providerName = args[4];
         }
 
         long seed = 4234234; // fixed seed to get repeatable random values.
-        if (args.length > 4) {
-            seed = Long.parseLong(args[4]);
+        if (args.length > 5) {
+            seed = Long.parseLong(args[5]);
         }
 
         SystemInfo.show();
@@ -47,6 +52,12 @@ public class HashBench {
 
         doHash(algorithm, blockSize, timeLimit, providerName, seed, true);
         doHash(algorithm, blockSize, timeLimit, providerName, seed, false);
+        if (repeat) {
+            while (true) {
+                doHash(algorithm, blockSize, timeLimit, providerName, seed, false);
+            }
+        }
+
     }
 
     private static void doHash(String algorithm, int blockSize, long timeLimit,
