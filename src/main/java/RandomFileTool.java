@@ -1,7 +1,7 @@
+import ufw.Log;
 import ufw.RandomInputStream;
 import ufw.RandomOutputStream;
 import ufw.StreamTool;
-import ufw.Validate;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -42,23 +42,26 @@ public class RandomFileTool {
     }
 
     private static void processFile(String arg, String file, long seed, int size) throws IOException {
-        String command = arg.toLowerCase();
+        final String command = arg.toLowerCase();
+        final int bufferSize = 8192;
         if (command.equals("c")) {
             FileOutputStream fos = new FileOutputStream(file);
             RandomInputStream ris = new RandomInputStream(seed, size);
-            StreamTool.copyAll(ris, fos, 8192);
+            StreamTool.copyAll(ris, fos, bufferSize);
         }
         else if (command.equals("v")) {
             FileInputStream fis = new FileInputStream(file);
             RandomOutputStream ros = new RandomOutputStream(seed, size);
-            StreamTool.copyAll(fis, ros, 8192);
+            StreamTool.copyAll(fis, ros, bufferSize);
             int missing = ros.getMissingByteCount();
             if (missing > 0) {
                 throw new RuntimeException("missing bytes: " + missing);
             }
         }
         else if (command.equals("d")) {
-            Validate.isTrue(new File(file).delete(), "failed to delete: " + file);
+            if (!new File(file).delete()) { // no hard exit, just warning
+                Log.warn("Failed to delete: " + file);
+            }
         }
     }
 
