@@ -202,7 +202,7 @@ public class Hex {
     public static String removeSeparator(String hexString, char separator, int bytesPerBlock) {
         Validate.notNull(hexString);
         int charsPerBlock = bytesPerBlock * 2;
-        Validate.isTrue(hexString.length() > charsPerBlock, "requires at least " + charsPerBlock + " characters. got " + hexString);
+        Validate.isTrue(hexString.length() >= charsPerBlock, "requires at least " + charsPerBlock + " characters. got " + hexString);
         Validate.isTrue((hexString.length() + 1) % (charsPerBlock + 1) == 0, "size does not match bytes per block.");
         int blocks = (hexString.length() + 1) / (charsPerBlock + 1);
         StringBuilder result = new StringBuilder(blocks * bytesPerBlock);
