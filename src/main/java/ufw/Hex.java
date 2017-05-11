@@ -26,7 +26,7 @@ public class Hex {
     public static String toString(byte[] ba, int offset, int length) {
         Validate.notNull(ba);
         Validate.isTrue(offset >= 0);
-        Validate.isTrue(length > 0);
+        Validate.isTrue(length >= 0);
         Validate.isTrue(offset + length <= ba.length);
 
         char[] buf = new char[length * 2];

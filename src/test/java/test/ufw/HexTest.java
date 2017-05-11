@@ -21,6 +21,17 @@ public class HexTest {
     }
 
     @Test
+    public void testEmpty() {
+        String nullHex = Hex.toString(null);
+        Assert.assertNotNull(nullHex);
+        Assert.assertTrue(nullHex.equals(Hex.NULL_ARRAY));
+
+        String emptyHex = Hex.toString(new byte[0]);
+        Assert.assertNotNull(emptyHex);
+        Assert.assertTrue(emptyHex.length() == 0);
+    }
+
+    @Test
     public void testErrorsFromString() {
         try {
             Hex.fromString("AAABA");  // odd number of characters
