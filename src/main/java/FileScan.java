@@ -99,7 +99,7 @@ public class FileScan {
     }
 
     /**
-     * data representing file metadata. <br/>
+     * data representing file metadata.<br/>
      * change date was omitted
      */
     private static class FileInfo {
@@ -109,7 +109,7 @@ public class FileScan {
 
         public FileInfo(String path, long size, byte[] hash) {
             Validate.isTrue(!path.contains(SEPARATOR), "file path contains " + SEPARATOR +
-                            " such files are currently not supported. " + path);
+                    " such files are currently not supported. " + path);
             this.path = path;
             this.size = size;
             this.hash = hash;
@@ -118,7 +118,6 @@ public class FileScan {
         public FileInfo(StringTokenizer st) {
             path = st.nextToken();
             size = Long.parseLong(st.nextToken());
-            // modified is no needed
             String hashString = st.nextToken();
             // rather dirty..
             hash = hashString.equals(Hex.NULL_ARRAY) ? null : Hex.fromString(hashString);
@@ -136,13 +135,16 @@ public class FileScan {
             return hash;
         }
 
+        public void setHash(byte[] hash) {
+            this.hash = hash;
+        }
+
         public String toLine() {
             StringBuilder sb = new StringBuilder();
             sb.append(path);
             sb.append(SEPARATOR);
             sb.append(size);
             sb.append(SEPARATOR);
-            // modified is no needed
             sb.append(Hex.toString(hash));
             return sb.toString();
         }
@@ -191,6 +193,7 @@ public class FileScan {
             for (FileChange fc : index) {
                 System.out.println(fc);
             }
+            return;
         }
 
         if (command.startsWith("m")) { // list merged files
@@ -201,6 +204,7 @@ public class FileScan {
             for (FileInfo fi : merged.values()) {  // todo sorting?
                 System.out.println(fi.toLine());
             }
+            return;
         }
         if (command.startsWith("h")) { // summary hash
             if (merged == null) {
@@ -208,13 +212,18 @@ public class FileScan {
                 return;
             }
             Log.info("summary hash: " + Hex.toString(summaryHash(merged)));
+            return;
         }
 
-        else if (command.startsWith("u") || command.startsWith("s")) { // update index (add changes), status (list changes)
+        if (command.startsWith("u") || command.startsWith("s")) { // update index (add changes), status (list changes)
+
+            boolean update = command.startsWith("u");
+            // fast: no hash, only file size "heuristics"
+            boolean fast = command.length() > 1 && command.charAt(1) == 'f';
 
             // scan current files...
             // note: during scan files shall not be changed or locked
-            ArrayList<FileInfo> files = scanFiles(new File(baseDir));
+            ArrayList<FileInfo> files = scanFiles(new File(baseDir), fast);
             long scanTime = System.currentTimeMillis(); // use end of scan.
             t.split("sort", files.size() + " files", logTimer); // start sort, show files read
 
@@ -222,6 +231,10 @@ public class FileScan {
             ArrayList<FileChange> changes = new ArrayList<>();
 
             if (merged == null) {
+                // for update need to scan with hash calculation
+                if (fast && update) {
+                    files = scanFiles(new File(baseDir), false);
+                }
                 // fresh index, all entries are "CRE"
                 for (FileInfo fi : files) {
                     changes.add(new FileChange(FileChange.Operation.CRE, fi, scanTime));
@@ -234,15 +247,25 @@ public class FileScan {
                 for (FileInfo fi : files) {
                     FileInfo match = merged.get(fi.getPath());
                     if (match == null) {
+                        checkHash(baseDir, fi, update);
                         changes.add(new FileChange(FileChange.Operation.CRE, fi, scanTime));
                     }
                     else {
                         // found with path
-                        if (!Arrays.equals(fi.getHash(), match.getHash())) {
+                        // "fast" detect with size, this will fail to detect changed file with same size
+                        if (fast) {
+                            if (fi.getSize() != match.getSize()) {
+                                // different size -> update
+                                checkHash(baseDir, fi, update);
+                                changes.add(new FileChange(FileChange.Operation.UPD, fi, scanTime));
+                            }
+                        }
+                        else if (!Arrays.equals(fi.getHash(), match.getHash())) {
                             // different hash -> update
                             changes.add(new FileChange(FileChange.Operation.UPD, fi, scanTime));
                         }
-                        // "else" same hash, nothing to do.
+
+                        // "else" same hash (same size), nothing to do.
                         Validate.isTrue(merged.remove(match.getPath()) != null, "failed to remove from map: " + match.toString());
                     }
                 }
@@ -251,7 +274,7 @@ public class FileScan {
                     changes.add(new FileChange(FileChange.Operation.DEL, fi, scanTime));
                 }
             }
-            if (command.startsWith("u") && changes.size() > 0) { // remove c&w code!
+            if (update && changes.size() > 0) {
                 // update: write changes to index
                 writeAppendIndex(infoFile, changes);
             }
@@ -262,6 +285,9 @@ public class FileScan {
                 }
             }
             t.stop(logTimer);
+        }
+        else {
+            throw new Exception("Unknown command: " + command);
         }
     }
 
@@ -285,35 +311,48 @@ public class FileScan {
         writer.close();
     }
 
-    /** scan all files recursively, calculate hashes */
-    private static ArrayList<FileInfo> scanFiles(File baseDir) throws Exception {
+    /**
+     * scan all files recursively, calculate hashes
+     */
+    private static ArrayList<FileInfo> scanFiles(File baseDir, boolean fast) throws Exception {
         ArrayList<FileInfo> files = new ArrayList<>();
-        scanFilesRecursive(baseDir, baseDir, files);
+        scanFilesRecursive(baseDir, baseDir, files, fast);
         return files;
     }
 
-    private static void scanFilesRecursive(File baseDir, File dir, ArrayList<FileInfo> files) throws Exception {
+    private static void scanFilesRecursive(File baseDir, File dir, ArrayList<FileInfo> files, boolean fast) throws Exception {
         Validate.isTrue(dir.exists(), "not found: " + dir);
         File[] fileArray = dir.listFiles();
         // Validate.isTrue(dir.isDirectory(), "not a directory: " + dir);
         Validate.isTrue(fileArray != null, "not a directory: " + dir); // null if not a directory
         for (File f : fileArray) {
             //  skip ".*" files/dirs
-            if (f.getName().startsWith(".")) {  // todo: more flexible
+            if (f.getName().startsWith(".")) {  // todo: more flexible (".scan-ignore")
                 continue;
             }
-
             if (f.isDirectory()) {
                 // recursive...
-                scanFilesRecursive(baseDir, f, files);
+                scanFilesRecursive(baseDir, f, files, fast);
             }
             else {
-                files.add(new FileInfo(cleanPath(baseDir, f.getPath()), f.length(), getHash(f)));
+                byte[] hash = fast ? null : getHash(f);
+                files.add(new FileInfo(cleanPath(baseDir, f.getPath()), f.length(), hash));
             }
         }
     }
 
-    /** clean up path: remove prefix, use unix path separator */
+    /**
+     * add hash if needed but missing
+     */
+    private static void checkHash(String baseDir, FileInfo fi, boolean needHash) throws Exception {
+        if (needHash && fi.getHash() == null) {
+            fi.setHash(getHash(new File(baseDir + SEP + fi.getPath())));
+        }
+    }
+
+    /**
+     * clean up path: remove prefix, use unix path separator
+     */
     private static String cleanPath(File dir, String path) {
         String prefix = fixSeparator(dir.getPath());
         String prefixFull = fixSeparator(dir.getAbsolutePath());  // may contain things like "C:"
@@ -338,7 +377,9 @@ public class FileScan {
     }
 
 
-    /**  check that each date in change list is equal or bigger ("later") that previous entry */
+    /**
+     * check that each date in change list is equal or bigger ("later") that previous entry
+     */
     private static void validateDateOrder(ArrayList<FileChange> changes) {
         long date = 0;
         for (FileChange fc : changes) {
@@ -351,7 +392,9 @@ public class FileScan {
         }
     }
 
-    /** get hash of file */
+    /**
+     * get hash of file
+     */
     private static byte[] getHash(File f) throws Exception {
         FileInputStream fis = new FileInputStream(f);
         MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
@@ -367,7 +410,7 @@ public class FileScan {
      * create hash that represents set of all files.
      * Note: files are sorted by path to create same hash for same set of files.
      */
-    private static byte[] summaryHash( HashMap<String, FileInfo> files2) throws Exception {
+    private static byte[] summaryHash(HashMap<String, FileInfo> files2) throws Exception {
         ArrayList<FileInfo> files = new ArrayList<>();  // todo: rework?
         files.addAll(files2.values());
         sortByPath(files);
@@ -388,7 +431,9 @@ public class FileScan {
         });
     }
 
-    /** get result list of files by merging index */
+    /**
+     * get result list of files by merging index
+     */
     private static HashMap<String, FileInfo> mergeIndex(ArrayList<FileChange> index) {
 
         HashMap<String, FileInfo> expected = new HashMap<>();  // track FileInfo per path
@@ -417,4 +462,4 @@ public class FileScan {
         }
         return expected;
     }
- }
+}
