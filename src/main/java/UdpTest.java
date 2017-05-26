@@ -77,12 +77,14 @@ public class UdpTest {
 
             else { // send 5 "text" packages
                 for (int i = 0; i < 5; i++) {
+                    if (i > 0) {
+                        Thread.sleep(1000);
+                    }
                     String msg = "hello_" + i;
                     byte[] buf = msg.getBytes();
                     DatagramPacket sendPacket = new DatagramPacket(buf, buf.length, remoteAddress, remotePort);
                     udpSocket.send(sendPacket);
                     Log.info("sent: " + msg);
-                    Thread.sleep(1000);
                 }
             }
         }
