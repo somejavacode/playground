@@ -1,7 +1,9 @@
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import ufw.Log;
 import ufw.SystemInfo;
 
 import java.security.MessageDigest;
+import java.security.Security;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
@@ -38,6 +40,9 @@ public class HashBench {
         String providerName = "SUN";
         if (args.length > 4) {
             providerName = args[4];
+            if (providerName.equals("BC")) {
+                Security.addProvider(new BouncyCastleProvider());
+            }
         }
 
         long seed = 4234234; // fixed seed to get repeatable random values.
