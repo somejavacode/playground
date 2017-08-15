@@ -4,6 +4,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
+/**
+ * tool to evaluate execution time (and split times)
+ */
 public class Timer {
 
     private String action;
@@ -12,14 +15,14 @@ public class Timer {
     private String splitAction;
     private long duration;
 
-
     /**
      * start timer with defined action
      *
      * @param action action used for logging
-     * @param log    if true log start
+     * @param log if true log start
      */
     public Timer(String action, boolean log) {
+        this.duration = 0;
         this.action = action;
         this.start = System.nanoTime();
         this.lastSplit = start;
@@ -33,7 +36,8 @@ public class Timer {
      * start timer with defined action and split action
      *
      * @param action action used for logging
-     * @param log    if true log start
+     * @param splitAction initial split action
+     * @param log if true log start
      */
     public Timer(String action, String splitAction, boolean log) {
         this.action = action;
@@ -49,7 +53,8 @@ public class Timer {
      * log intermediate time (show total time and time since last split)
      *
      * @param newSplitAction next split action used for logging
-     * @param message        message about last action (what was done)
+     * @param message message about last action (what was done)
+     * @param log if true log split
      */
     public void split(String newSplitAction, String message, boolean log) {
         long splitTime = System.nanoTime();
@@ -69,6 +74,7 @@ public class Timer {
      * log intermediate time (show total time and time since last split)
      *
      * @param newSplitAction next split action used for logging
+     * @param log if true log split
      */
     public void split(String newSplitAction, boolean log) {
         split(newSplitAction, null, log);
@@ -118,6 +124,7 @@ public class Timer {
      * get string representation of time
      *
      * @param fractions show fractions of milliseconds (microseconds)
+     * @param time time value in nanoseconds
      * @return time String
      */
     public String getTimeString(long time, boolean fractions) {
@@ -128,7 +135,7 @@ public class Timer {
             return df.format(time / 1000000.0) + "ms";
         }
         else {
-            return duration / 1000000 + "ms";
+            return time / 1000000 + "ms";
         }
     }
 }
