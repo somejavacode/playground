@@ -5,7 +5,8 @@ package ufw;
  */
 public class Hex {
 
-    private static final char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+    private static final char[] HEX_DIGITS = {'0', '1', '2', '3', '4', '5', '6', '7',
+                                              '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
     public static final String NULL_ARRAY = "nullBytes";
 
@@ -68,6 +69,9 @@ public class Hex {
      * convert byte array to block of hexadecimal Strings (two characters per byte e.g. 3EF35A)
      *
      * @param ba the array to convert
+     * @param bytesPerLine number of bytes per line
+     * @param pipeEvery number of bytes in pipe separated block
+     * @param showChars if true show ascii representation of bytes
      * @return the String block representation
      */
     public static String toStringBlock(byte[] ba, int bytesPerLine, int pipeEvery, boolean showChars) {
@@ -127,12 +131,9 @@ public class Hex {
         int len = hex.length();
         Validate.isTrue(len % 2 == 0, "number of characters must be even. got ", len);
 
-        byte[] buf = new byte[((len + 1) / 2)];
+        byte[] buf = new byte[len / 2];
         int i = 0;
         int j = 0;
-        if ((len % 2) == 1) {
-            buf[j++] = (byte) fromDigit(hex.charAt(i++));
-        }
 
         while (i < len) {
             buf[j++] = (byte) ((fromDigit(hex.charAt(i++)) << 4) | fromDigit(hex.charAt(i++)));
