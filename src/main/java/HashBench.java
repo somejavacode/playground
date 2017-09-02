@@ -1,8 +1,8 @@
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import ufw.Log;
 import ufw.SystemInfo;
 
 import java.security.MessageDigest;
+import java.security.Provider;
 import java.security.Security;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -41,7 +41,9 @@ public class HashBench {
         if (args.length > 4) {
             providerName = args[4];
             if (providerName.equals("BC")) {
-                Security.addProvider(new BouncyCastleProvider());
+                // load via reflection, make this a runtime only dependency
+                Class<?> bcProvider = Class.forName("org.bouncycastle.jce.provider.BouncyCastleProvider");
+                Security.addProvider((Provider) bcProvider.newInstance());
             }
         }
 
