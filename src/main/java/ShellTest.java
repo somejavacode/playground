@@ -3,7 +3,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * a tool to test shell integration (cmd.exe in windows)<br/>
+ * a tool to test shell integration (cmd.exe in windows)
+ * <p>
  * it will generate periodic output to stdout and stderr,
  * report shutdown if detected.
  *

@@ -8,10 +8,12 @@ import java.util.Random;
 public class MemoryRamp {
 
     /**
-     * allocate and hold specific amount of memory. <br/>
-     * function will sleep endless after success to lock memory. terminate with ctrl-c.<br/>
+     * allocate and hold specific amount of memory.
+     * <p>
+     * function will sleep endless after success to lock memory. terminate with ctrl-c.
      *
      * @param args arg[0] memory limit in MiB, arg[1] != null: random fill
+     * @throws Exception in case of problems
      */
     public static void main(String[] args) throws Exception {
 

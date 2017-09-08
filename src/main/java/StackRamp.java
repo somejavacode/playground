@@ -1,6 +1,7 @@
 /**
- * find out stack size. run with different values of -Xss<br/>
- * NOTE: values are aligned to next 64k, e.g. 65 -> 128, 129 -> 192
+ * find out stack size. run with different values of -Xss
+ * <p>
+ * NOTE: values are aligned to next 64k, e.g. 65 to 128, 129 to 192
  *
  * windows JDK 1.8.0_60 x64:
  * -Xss128k (min): 858

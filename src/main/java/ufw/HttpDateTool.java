@@ -7,9 +7,9 @@ import java.util.TimeZone;
 
 /**
  * this is a "fixed" HTTP date (RFC7231 7.1.1.1) parser and formatter.
- * <br/>
+ * <p>
  * according date format pattern: "EEE, dd MMM yyyy HH:mm:ss z"
- * <br/>
+ * <p>
  * e.g. "Tue, 27 Jul 2009 12:28:53 GMT"
  */
 public class HttpDateTool {

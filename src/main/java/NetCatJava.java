@@ -18,7 +18,8 @@ import java.net.Socket;
 import java.net.SocketAddress;
 
 /**
- * java tool inspired by the unix tool netcat https://en.wikipedia.org/wiki/Netcat<br/>
+ * java tool inspired by the unix tool netcat https://en.wikipedia.org/wiki/Netcat
+ * <p>
  * TODO: add multi-cast
  */
 public class NetCatJava {

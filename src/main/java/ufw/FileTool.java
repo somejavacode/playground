@@ -12,7 +12,8 @@ public class FileTool {
     /**
      * test file for certain attributes. any "true" parameter will be checked to be "true".
      * first failed test throws RuntimeException.
-     * NOTE; pointless combination of tests are not rejected (e.g. isFile AND isDirectory will always fail)
+     * <p>
+     * Note: pointless combination of tests are not rejected (e.g. isFile AND isDirectory will always fail)
      *
      * @param file the file to check
      * @param exists  fails if it does not exists
@@ -48,6 +49,7 @@ public class FileTool {
      * create file. assume success. assume can write.
      *
      * @param file the file to create
+     * @throws IOException in case of io problems
      */
     public static void createOK(File file) throws IOException {
         boolean success = file.createNewFile();
@@ -63,6 +65,7 @@ public class FileTool {
      * create directory. assume success. assume can write.
      *
      * @param file the file to create
+     * @throws IOException in case of io problems
      */
     public static void mkDirsOK(File file) throws IOException {
         boolean success = file.mkdirs();
@@ -77,7 +80,11 @@ public class FileTool {
     /**
      * copy defined number of bytes from RandomAccessFile source to destination File
      *
+     * @param randomAccessFile the source file
+     * @param offset offset in source file
+     * @param dest the destination file
      * @param byteCount the number of bytes to transfer
+     * @throws IOException in case of io problems
      */
     public static void readFileFromRAF(RandomAccessFile randomAccessFile, int offset, File dest, int byteCount) throws IOException {
         FileOutputStream fos = new FileOutputStream(dest);
@@ -101,6 +108,7 @@ public class FileTool {
      *
      * @param file file to read
      * @param outputStream stream to write to (NOTE: stream will be left open)
+     * @throws IOException in case of io problems
      */
     public static void writeFileToStream(File file, OutputStream outputStream) throws IOException {
         FileInputStream fis = new FileInputStream(file);

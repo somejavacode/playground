@@ -4,10 +4,13 @@ import java.util.Arrays;
 import java.util.Random;
 
 /**
- * this class fixes three "problems" in Random.nextBytes()<br/>
- * a) missing signature nextBytes(byte[], offset, size)<br/>
- * b) missing signature nextByte()<br/>
- * c) problems if array sizes not aligned to integer (4 bytes): e.g. two calls nextBytes(byte[1]) does not match one call nextBytes(byte[2])<br/>
+ * this class fixes three "problems" in Random.nextBytes()
+ * <p>
+ * a) missing signature nextBytes(byte[], offset, size)
+ * <p>
+ * b) missing signature nextByte()
+ * <p>
+ * c) problems if array sizes not aligned to integer (4 bytes): e.g. two calls nextBytes(byte[1]) does not match one call nextBytes(byte[2])
  */
 public class RandomBytes {
 

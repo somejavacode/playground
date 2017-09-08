@@ -100,6 +100,7 @@ public class RandomTool {
      * @param length number of bytes to write
      * @param blockSize size of block buffer
      * @param sleep sleep time after each block
+     * @throws Exception in case of io problems
      */
     public void writeToStream(Random rand, OutputStream os, int length, int blockSize, int sleep) throws Exception {
         int remaining = length;
@@ -126,6 +127,7 @@ public class RandomTool {
      * @param rand random generator
      * @param os the stream to write to
      * @param length number of bytes to write
+     * @throws Exception in case of io problems
      */
     public void writeToStream(Random rand, OutputStream os, int length) throws Exception {
         writeToStream(rand, os, length, 8192, 0);

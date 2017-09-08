@@ -5,10 +5,13 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 /**
- * my first udp socket.<br/>
- * tested OK:<br/>
- * start sever: <code>java UdpTest 2222</code><br/>
- * start client:  <code>java UdpTest localhost 2222</code><br/>
+ * my first udp socket.
+ * <p>
+ * tested OK:
+ * <p>
+ * start sever: <code>java UdpTest 2222</code>
+ * <p>
+ * start client:  <code>java UdpTest localhost 2222</code>
  */
 
 public class UdpTest {

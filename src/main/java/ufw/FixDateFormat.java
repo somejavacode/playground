@@ -6,14 +6,16 @@ import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
 /**
- * this is a "fixed" date formatter. pattern: "yyyy-MM-dd HH:mm:ss.SSS" <br/>
- * the format follows ISO 8601 with following additions:<br/>
- * decimal mark is "." in (loose) alignment with the preferred English language<br/>
- * the "T" separator between date and time was replaced by a blank<br/>
- * <br/>
- * it is 2-3 times faster (sync case) than org.apache.commons.lang3.time.FastDateFormat.
- * FastDateFormat is 2-3 times faster than java.text.SimpleDateFormat.
- * Total speedup: factor 5+
+ * this is a "fixed" date formatter. pattern: "yyyy-MM-dd HH:mm:ss.SSS"
+ * <p>
+ * the format follows ISO 8601 with following additions:
+ * <ul>
+ *   <li>decimal mark is "." in (loose) alignment with the preferred English language</li>
+ *   <li>the "T" separator between date and time was replaced by a blank</li>
+ *   <li>it is 2-3 times faster (sync case) than org.apache.commons.lang3.time.FastDateFormat.
+ *   FastDateFormat is 2-3 times faster than java.text.SimpleDateFormat.
+ *   Total speedup: factor 5+</li>
+ * </ul>
  */
 public class FixDateFormat {
 

@@ -9,7 +9,7 @@
  * final conclusion, for windows you need to control 3 "variables":
  * - java file.encoding (e.g. -Dfile.encoding=cp850)
  * - cmd.exe codepage (e.g. chcp 1252)
- * - cmd.exe font (truetype font improves things: cmd.exe -> properties -> font -> "Lucidia Console")
+ * - cmd.exe font (truetype font improves things: cmd.exe - properties - font - "Lucidia Console")
  *
  * further notes
  * - java defaults are "rather broken" (using same property for console and file might be one problem)

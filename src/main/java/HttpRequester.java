@@ -15,7 +15,7 @@ import java.util.Random;
 import java.util.StringTokenizer;
 
 /**
- * HTTP: old RFC2616 -> obsoleted by RFC7230..RFC7235 2014-06
+ * HTTP: old RFC2616: obsoleted by RFC7230..RFC7235 2014-06
  *  http://tools.ietf.org/html/rfc2616 176 pages
  *  http://tools.ietf.org/html/rfc7230 .. 35
  *   1.  "Message Syntax and Routing" (this document) 89 pages
@@ -150,6 +150,7 @@ public class HttpRequester {
 
     /**
      * write request body to stream
+     *
      * @param os destination stream for body
      * @param is source stream
      * @param length number of bytes to transfer
@@ -157,6 +158,7 @@ public class HttpRequester {
      * @param createSeed if not 0 write random bytes
      * @param blockSize buffer or junk size
      * @param sleep sleep after each block to delay transfer
+     * @throws Exception in case of io problems
      */
     private static void writeRequest(OutputStream os, InputStream is, int length, boolean chunked, int createSeed, int blockSize, int sleep) throws Exception {
 
@@ -255,7 +257,7 @@ public class HttpRequester {
         throw new RuntimeException("don't know how to read body.");
     }
 
-    /**
+    /*
      * read expected CR LF.
      */
     private static void readCRLFEmpty(InputStream is) throws IOException {
@@ -319,7 +321,9 @@ public class HttpRequester {
     /**
      * read ascii from input stream. expect crlf termination
      *
+     * @param is the input stream
      * @return ascii string
+     * @throws IOException in case of io problems
      */
     private static String readCRLF(InputStream is) throws IOException {
         StringBuilder header = new StringBuilder();

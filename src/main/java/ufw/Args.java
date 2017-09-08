@@ -5,9 +5,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 /**
- * just a quick hack for (usually tedious) command line arguments parsing.<br/>
- * reduced syntax: --flag1 -option1 value1 -option2 value2 --flag2 extraValue1 extraValue2<br/>
- * Rules: argument names start with "-". argument values and extra values must not start with "-".<br/>
+ * just a quick hack for (usually tedious) command line arguments parsing.
+ * <p>
+ * reduced syntax: --flag1 -option1 value1 -option2 value2 --flag2 extraValue1 extraValue2
+ * <p>
+ * Rules: argument names start with "-". argument values and extra values must not start with "-".
  */
 // TODO: think about api with default values.
 public class Args {
