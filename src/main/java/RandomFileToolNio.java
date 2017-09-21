@@ -8,8 +8,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
-public class RandomFileTool {
+public class RandomFileToolNio {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 4) {
@@ -48,12 +51,18 @@ public class RandomFileTool {
         final int bufferSize = 8192;
         if (command.equals("c")) {
             FileOutputStream fos = new FileOutputStream(file);
+            FileChannel channelOut = fos.getChannel();
             RandomInputStream ris = new RandomInputStream(seed, size);
+            ReadableByteChannel channelIn = null;  // TODO finish here
+            channelOut.transferFrom(channelIn, 0, size);
+
             StreamTool.copyAll(ris, fos, bufferSize);
         }
         else if (command.equals("v")) {
             FileInputStream fis = new FileInputStream(file);
+            FileChannel channelIn = fis.getChannel();
             RandomOutputStream ros = new RandomOutputStream(seed, size);
+            WritableByteChannel channelOut = null; // TODO
             StreamTool.copyAll(fis, ros, bufferSize);
             int missing = ros.getMissingByteCount();
             if (missing > 0) {
