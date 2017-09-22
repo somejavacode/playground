@@ -1,9 +1,10 @@
 package test.ufw;
 
-
 import org.junit.Assert;
 import org.junit.Test;
 import ufw.Log;
+
+import java.time.Clock;
 
 public class TimeResolutionTest {
 
@@ -23,8 +24,26 @@ public class TimeResolutionTest {
             Assert.assertTrue(end > start);
             total += end - start;
         }
-        Log.info("average millis step: " + 1.0 * total / runs);
+        Log.info("average currentTimeMillis step: " + 1.0 * total / runs);
+    }
 
+    @Test
+    public void testTimeUTC() {
+        int runs = 50;
+        long total = 0;
+        for (int i = 0; i < runs; i++) {
+            long start = Clock.systemUTC().millis();
+            long end;
+            while (true) {
+                end = Clock.systemUTC().millis();
+                if (end != start) {
+                    break;
+                }
+            }
+            Assert.assertTrue(end > start);
+            total += end - start;
+        }
+        Log.info("average Clock millis step: " + 1.0 * total / runs);
     }
 
     @Test
@@ -46,6 +65,5 @@ public class TimeResolutionTest {
         Log.info("average nano step: " + 1.0 * total / runs);  // approx 1000
 
     }
-
 
 }
