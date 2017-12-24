@@ -13,7 +13,7 @@ public class RandomFileTool {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 4) {
-            System.out.println("syntax: create or verify RandomFileTool C|V|D Filename Seed Size [count]");
+            System.out.println("create, verify delete random file(s).\nSyntax: RandomFileTool C|V|D Filename Seed Size [count]");
             return;
         }
         String file = args[1];
@@ -27,7 +27,9 @@ public class RandomFileTool {
         if (args.length > 5) {
             path = args[5];
         }
-        Timer timer = new Timer("RandomFileTool", false);
+
+        Timer timer = new Timer("RandomFileTool: " + args[0] + " file=" + file +
+                                " seed=" + seed + " size=" + size + " count=" + count, true);
         if (count == 1) {
             processFile(args[0], path + "/" + file, seed, size);
         }

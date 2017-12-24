@@ -93,11 +93,11 @@ public class Timer {
         duration = end - start;
         if (log) {
             if (splitAction == null) {
-                Log.info("done " + action + messageStr + " took=" + getTimeString(duration, true));
+                Log.info("done  " + action + messageStr + " took=" + getTimeString(duration, true));
             }
             else {
                 long splitDelta = end - lastSplit;
-                Log.info("done " + action + "/" + splitAction + " "
+                Log.info("done  " + action + "/" + splitAction + " "
                         + splitAction + messageStr + "=" + getTimeString(splitDelta, true) +
                         " total=" + getTimeString(duration, true));
             }
