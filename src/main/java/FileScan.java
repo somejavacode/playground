@@ -298,6 +298,7 @@ public class FileScan {
         while ((line = br.readLine()) != null) {
             changes.add(new FileChange(line));
         }
+        br.close();
         return changes;
     }
 
@@ -403,6 +404,7 @@ public class FileScan {
         while ((bytes = fis.read(buffer)) != -1) {
             md.update(buffer, 0, bytes);
         }
+        fis.close();
         return md.digest();
     }
 

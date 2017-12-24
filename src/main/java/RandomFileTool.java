@@ -23,15 +23,19 @@ public class RandomFileTool {
         if (args.length > 4) {
             count = Integer.parseInt(args[4]);
         }
+        String path = ".";
+        if (args.length > 5) {
+            path = args[5];
+        }
         Timer timer = new Timer("RandomFileTool", false);
         if (count == 1) {
-            processFile(args[0], file, seed, size);
+            processFile(args[0], path + "/" + file, seed, size);
         }
         else {
             int digits = Integer.toString(count).length();
             for (int i = 0; i < count; i++) {
                 // format sequence with enough leading zeros
-                String fileSeq = file + String.format("-%0" + digits + "d", i + 1);
+                String fileSeq = path + "/" + file + String.format("-%0" + digits + "d", i + 1);
                 try {
                     processFile(args[0], fileSeq, seed + i, size);
                 }
@@ -50,6 +54,7 @@ public class RandomFileTool {
             FileOutputStream fos = new FileOutputStream(file);
             RandomInputStream ris = new RandomInputStream(seed, size);
             StreamTool.copyAll(ris, fos, bufferSize);
+            fos.close();
         }
         else if (command.equals("v")) {
             FileInputStream fis = new FileInputStream(file);
