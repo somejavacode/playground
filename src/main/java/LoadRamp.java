@@ -6,10 +6,16 @@ import ufw.SystemInfo;
  */
 public class LoadRamp {
 
+    private enum FibType {
+        LONG,
+        INT,
+        DOUBLE
+    }
+
     public static void main(String[] args) {
 
         if (args.length < 1) {
-            Log.info("Start with Ramp type as first argument: 'F': Fibonacci, 'M': Memory");
+            Log.info("Start with Ramp type as first argument: 'F[I|D]': Fibonacci (Long,Int,Double) 'M': Memory");
             System.exit(1);
         }
 
@@ -17,40 +23,49 @@ public class LoadRamp {
 
         String rampType = args[0].toUpperCase();
 
-        if ("F".equals(rampType)) {
-            long fibRun = 0;
+        if (rampType.startsWith("F")) {
+            int fibRun = 0;
+            FibType type = FibType.LONG; // default
+            if (rampType.equals("FD")) {
+                type = FibType.DOUBLE;
+            }
+            if (rampType.equals("FI")) {
+                type = FibType.INT;
+            }
+
             if (args.length > 1) {
-                fibRun = Long.parseLong(args[1]);
+                fibRun = Integer.parseInt(args[1]);
             }
             if (fibRun == 0) {
                 int fibStart = 35;
-                fibonacci(fibStart); // warm-up
+                fibonacciLong(fibStart); // warm-up
                 long start = System.currentTimeMillis();
-                fibonacci(fibStart); // get time for initial run
+                fibonacciLong(fibStart); // get time for initial run
                 long time = System.currentTimeMillis() - start;
                 // estimate fibonacci value for 10s burn time.
                 double desiredTime = 10 * 1000;
                 double extraFib = Math.log(desiredTime / time) / Math.log(2);
-                fibRun = fibStart + 1 + (long) Math.floor(extraFib);
+                fibRun = fibStart + 1 + (int) Math.floor(extraFib);
                 Log.info("estimate fibonacci argument: " + fibRun);
             }
 
             long start = System.currentTimeMillis();
-            fibonacci(fibRun);
+            fibonacciType(fibRun, type);
             long time = System.currentTimeMillis() - start;
-            Log.info("fibonacci(" + fibRun + ") time: " + time + "ms");
+            Log.info("fibonacci(" + type + "," + fibRun + ") time: " + time + "ms");
 
             if (args.length > 2) {
                 // third argument: number of burn threads
                 int burnThreads = Integer.parseInt(args[2]);
                 while (true) {
-                    fibonacciMulti(fibRun, burnThreads, time);
+                    fibonacciMulti(fibRun, burnThreads, time, type);
                 }
             }
 
-            fibonacciMulti(fibRun, 2, time);
-            fibonacciMulti(fibRun, 4, time);
-            fibonacciMulti(fibRun, 8, time);
+            // do the "ramp"
+            fibonacciMulti(fibRun, 2, time, type);
+            fibonacciMulti(fibRun, 4, time, type);
+            fibonacciMulti(fibRun, 8, time, type);
         }
         else if ("M".equals(rampType)) {
 
@@ -73,11 +88,11 @@ public class LoadRamp {
         }
     }
 
-    private static void fibonacciMulti(long n, int threads, long singleTime) {
+    private static void fibonacciMulti(int n, int threads, long singleTime, FibType type) {
         Thread[] runners = new Thread[threads];
         long start = System.currentTimeMillis();
         for (int i = 0; i < threads; i++) {
-            runners[i] = new FibRunner("fib-" + i, n);
+            runners[i] = new FibRunner("fib-" + i, n, type);
             runners[i].start();
         }
         for (int i = 0; i < threads; i++) {
@@ -90,7 +105,7 @@ public class LoadRamp {
         }
         long time = System.currentTimeMillis() - start;
         double speedUp = 1.0 * singleTime / time * threads;
-        Log.info("fibonacci(" + n + ") x" + threads + " time: " + time + "ms. speedUp=" + speedUp);
+        Log.info("fibonacci(" + type + "," + n + ") x" + threads + " time: " + time + "ms. speedUp=" + speedUp);
 
     }
 
@@ -116,13 +131,47 @@ public class LoadRamp {
 
 
     /**
-     * fibonacci recursion to burn cpu
+     * fibonacci recursion to burn cpu (long)
      */
-    private static long fibonacci(long n) {
+    private static long fibonacciLong(long n) {
         if (n <= 1) {
             return n;
         }
-        return fibonacci(n - 1) + fibonacci(n - 2);
+        return fibonacciLong(n - 1) + fibonacciLong(n - 2);
+    }
+
+    /**
+     * fibonacci recursion to burn cpu (integer)
+     */
+    private static int fibonacciInt(int n) {
+        if (n <= 1) {
+            return n;
+        }
+        return fibonacciInt(n - 1) + fibonacciInt(n - 2);
+    }
+
+    /**
+     * fibonacci recursion to burn cpu (double)
+     */
+    private static double fibonacciDouble(double n) {
+        if (n <= 1) {
+            return n;
+        }
+        return fibonacciDouble(n - 1) + fibonacciDouble(n - 2);
+    }
+
+    private static void fibonacciType(int i, FibType type) {
+        switch (type) {
+            case INT:
+                fibonacciInt(i);
+                break;
+            case LONG:
+                fibonacciLong(i);
+                break;
+            case DOUBLE:
+                fibonacciDouble(i);
+                break;
+        }
     }
 
     /**
@@ -136,15 +185,17 @@ public class LoadRamp {
     }
 
     private static class FibRunner extends Thread {
-        private long i;
+        private int i;
+        private FibType type;
 
-        public FibRunner(String name, long i) {
+        public FibRunner(String name, int i, FibType type) {
             super(name);
             this.i = i;
+            this.type = type;
         }
 
         public void run() {
-            fibonacci(i);
+            fibonacciType(i, type);
             // log("done");
         }
     }
