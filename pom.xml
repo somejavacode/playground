@@ -34,7 +34,7 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk15on</artifactId>
-            <version>1.57</version>
+            <version>1.59</version>
         </dependency>
 
     </dependencies>
@@ -48,7 +48,7 @@
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.7.8</version>
+                        <version>0.7.9</version>
                         <executions>
                             <execution>
                                 <id>default-prepare-agent</id>
