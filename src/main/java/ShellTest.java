@@ -1,3 +1,5 @@
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -21,6 +23,10 @@ public class ShellTest {
         if (args.length > 1) {
             System.setErr(new PrintStream(args[1]));
         }
+
+        Thread reader = new Thread(new InputReader(), "stdin_reader");
+        reader.setDaemon(true);  // don't keep JVM alive
+        reader.start();
 
         while (true) {
             log(false, "stdOut");
@@ -49,6 +55,26 @@ public class ShellTest {
 
         public void run() {
             log(true, "hoo hoo - hook was here.");
+        }
+    }
+
+    private static class InputReader implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                while (true) {
+                    String line = reader.readLine();
+                    log(false, "input: " + line);
+                    if (line.equals("EXIT")) {
+                        System.exit(0); // shutdown hook will run.
+                    }
+                }
+            }
+            catch (Exception e) {
+                log(true, "exception in reader. " + e);
+            }
         }
     }
 
