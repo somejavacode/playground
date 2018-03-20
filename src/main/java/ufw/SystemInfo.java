@@ -35,8 +35,6 @@ public class SystemInfo {
 
     public static void showClassPath() {
 
-        char sep = System.getProperty("path.separator").charAt(0);  // bit ugly but works
-
 //        RuntimeMXBean rtb = ManagementFactory.getRuntimeMXBean();
 //        Log.info("classPath(RTMXB)=\n" + rtb.getClassPath().replace(sep, '\n'));
 //        // this path is not found in classLoader hierarchy
@@ -45,10 +43,11 @@ public class SystemInfo {
 //        Log.info("libraryPath(RTMXB)=\n" + rtb.getLibraryPath().replace(sep, '\n'));
 
         // system properties deliver same results like RuntimeMXBean (plus extra "sun.boot.library.path")
-        Log.info("------- java.class.path:\n" + System.getProperty("java.class.path").replace(sep, '\n'));
-        Log.info("------- java.library.path:\n" + System.getProperty("java.library.path").replace(sep, '\n'));
-        Log.info("------- sun.boot.class.path:\n" + System.getProperty("sun.boot.class.path").replace(sep, '\n'));
-        Log.info("------- sun.boot.library.path:\n" + System.getProperty("sun.boot.library.path").replace(sep, '\n'));
+        Log.info("------- java.class.path:\n" + dumpClassPath(System.getProperty("java.class.path")));
+        Log.info("------- java.library.path:\n" + dumpClassPath(System.getProperty("java.library.path")));
+        // this is "null" with JKD9+
+        Log.info("------- sun.boot.class.path:\n" + dumpClassPath(System.getProperty("sun.boot.class.path")));
+        Log.info("------- sun.boot.library.path:\n" + dumpClassPath(System.getProperty("sun.boot.library.path")));
         Log.info("-------");
 
         // Log.info("java.system.class.loader=" + System.getProperty("java.system.class.loader")); always null?
@@ -71,7 +70,22 @@ public class SystemInfo {
         }
     }
 
+    // make this more "readable"
+    private static String dumpClassPath(String path) {
+        if (path == null) {
+            return null;
+        }
+        char sep = System.getProperty("path.separator").charAt(0);  // bit ugly but works
+        return path.replace(sep, '\n');
+    }
+
     private static void dumpClassLoader(String name, ClassLoader cls) {
+        //if (!System.getProperty("java.runtime.version").startsWith("XX")) {  // 1.8.0_161-b12, 9.0.4+11, 10+46
+        if (!System.getProperty("java.specification.version").contains(".")) {  // 1.8, 9, 10
+            return; // skip JDK9+
+        }
+        // fails with JDK9+
+        // java.base/jdk.internal.loader.ClassLoaders$AppClassLoader cannot be cast to java.base/java.net.URLClassLoader
         URL[] urls = ((URLClassLoader) cls).getURLs();
         Log.info(name + "=" + cls);  // what toString will do?
         for (URL url : urls) {
