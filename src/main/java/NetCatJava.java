@@ -12,6 +12,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -61,25 +62,39 @@ public class NetCatJava {
         if (udp) {
             DatagramSocket udpSocket = null;
             int udpMax = 1024;
-            int remotePort = port;
 
             if (listenPort > 0) {
                 udpSocket = new DatagramSocket(listenPort);
                 byte[] buf = new byte[udpMax];
                 DatagramPacket recPacket = new DatagramPacket(buf, udpMax);
-                udpSocket.receive(recPacket);
-                remotePort = recPacket.getPort();  // is this source port?
+                while (true) {
+                    udpSocket.receive(recPacket);
+                    // System.out.println(Hex.toStringBlock(recPacket.getData())); zeros..
+                    // have to cut out true data, this is "raw"
+                    byte[] data = recPacket.getData();
+                    byte[] lData = new byte[recPacket.getLength()];
+                    System.arraycopy(data, 0, lData, 0, recPacket.getLength());
+                    System.out.print(new String(lData));
+                }
+                //int remotePort = recPacket.getPort();  // is this source port?
 
             }
             else {
-                udpSocket = new DatagramSocket(port);
+                udpSocket = new DatagramSocket(); // without port!
                 byte[] buf = new byte[udpMax];
                 DatagramPacket sendPacket = new DatagramPacket(buf, udpMax);
-                // TODO
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
+                String line;
+                while ((line = br.readLine()) != null) {
+                    byte[] data = (line + "\r\n").getBytes();  // default charset (sucks, yes)
+                    sendPacket.setLength(data.length);
+                    sendPacket.setData(data);
+                    sendPacket.setPort(port);
+                    sendPacket.setAddress(InetAddress.getByName(host));
+                    udpSocket.send(sendPacket);
+                }
             }
-
-
         }
 
         else if (listenPort > 0) {
