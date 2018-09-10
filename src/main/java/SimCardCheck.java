@@ -85,7 +85,6 @@ public class SimCardCheck {
 
             CardChannel channel = card.getBasicChannel();
 
-            String owner = "";
             // try some AIDs
             ResponseAPDU r;
 
@@ -93,23 +92,34 @@ public class SimCardCheck {
             // -> http://www.etsi.org/deliver/etsi_ts/100900_100999/100977/08.14.00_60/ts_100977v081400p.pdf
             // 9  Description of the commands
             // 10 Contents of the Elementary Files (EF)
-            // select MF
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), false);
+            // select MF (3F00)
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), true);
             // 9F16  = 16 bytes... SW2 .. length
             Validate.isTrue(r.getSW1() == 0x9F);
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
-            Log.info("MF content: " + Hex.toString(r.getData()));
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+
+            byte[] resp = r.getData();
+            Log.info("MF select response: " + Hex.toString(resp));
+            Validate.isTrue(resp.length >= 22);
+            boolean pinDisabled = (resp[13] & 0x80) > 0;
+            int remainPin = resp[18] & 0xf;
+            int remainPuk = resp[19] & 0xf;
+            Log.info("MF select response (PIN disabled) " + pinDisabled);
+            Log.info("MF select response (PIN status) " + remainPin);
+            Log.info("MF select response (PUK status) " + remainPuk);
+            Log.info("MF select response (PIN2 status) " + (resp[20] & 0xf));
+            Log.info("MF select response (PUK2 status) " + (resp[21] & 0xf));
 
             // Y1: 0000955A3F00010000AAFA010DB304060500838A838A00008383
             // H1: 00004F583F0001000000000013B303090400838A838A000300004F5800004F58
 
-            // select ICCID (MF level)
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), false);
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
+            // select EF ICCID 2FE2 (MF level)
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), true);
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
             Log.info("select ICCID response: " + Hex.toString(r.getData()));
             // file size
             byte size = r.getData()[3];  // knowing, will be 0x0A bytes (Note: code assumes < 256)
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
+            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), true);
             Log.info("ICCID content: " + Hex.toString(r.getData()));
 
             // Y1: 983421902021033974F3,
@@ -117,26 +127,82 @@ public class SimCardCheck {
             // H1: 98347000004120433998
             //     89430700001402349389 number on card 1402349389
 
-            // select "MF"/"GSM"
-            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), false);
-            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F20"), 0x00), false);
-            // select IMSI (GSM level)
-            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F07"), 0x00), false);
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
-            Log.info("select IMSI response: " + Hex.toString(r.getData()));
-            // file size
-            size = r.getData()[3];
-            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
-            Log.info("IMSI content: " + Hex.toString(r.getData()));
+            boolean auth = pinDisabled;
+            if (!pinDisabled) {
 
-            // Y1: 082923212802905417
-            //     909232128220094571 imsi: 232128220094571, MCC 12 = Yesss
+                if (remainPin > 0) {
+                    // need pin to read IMEI
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                    System.out.print("input pin: ");
+                    String pin = reader.readLine();
 
-            // H1: 082923706701906883
-            //     809232077610098638 imsi: 232077610098638, MCC 07 = tele.ring? T-Mobile Austria
+                    // send verify CHV1 aka PIN
+                    r = processAPDU(channel, new CommandAPDU(0xA0, 0x20, 0x00, 0x01, getPinBytes(pin), 0x00), false);
+                    // Log.info("verify response:  0x" + Integer.toHexString(r.getSW()));
+                    auth = true;
+                    if (r.getSW() != 0x9000) {
+                        auth = false;
+                        Log.info("wrong PIN!");
+                    }
+                }
+                else if (remainPuk > 0) {
+                    // need puk to reset pin
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+                    System.out.print("no more pin retries. enter puk: ");
+                    String puk = reader.readLine();
+                    Validate.isTrue(puk.length() == 8, "wrong puk length");
+                    System.out.print("enter new pin: ");
+                    String pin = reader.readLine();
 
-            // https://en.wikipedia.org/wiki/Mobile_country_code MCC AT: 232, MNC  01: A1, 03: TMO, 12: yesss, more
+                    byte[] bytes = new byte[16];
+                    System.arraycopy(getPinBytes(puk), 0, bytes, 0, 8);
+                    System.arraycopy(getPinBytes(pin), 0, bytes, 8, 8);
 
+                    // send unblock CHV1 (aka PUK)
+                    r = processAPDU(channel, new CommandAPDU(0xA0, 0x2C, 0x00, 0x01, bytes, 0x00), false);
+                    // Log.info("verify response:  0x" + Integer.toHexString(r.getSW()));
+                    auth = true;
+                    if (r.getSW() != 0x9000) {
+                        auth = false;
+                        Log.info("wrong PUK!");
+                    }
+                }
+                else {
+                    Log.info("No more PUK reties. GAME OVER.");
+                    auth = false;
+                }
+            }
+
+            if (auth) {
+                // select "MF", not required here
+//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), true);
+//            Validate.isTrue(r.getSW1() == 0x9F);
+//            processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+                // Log.info("select MF response: " + Hex.toString(r.getData()));
+
+                // select GSM
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F20"), 0x00), false);
+                Validate.isTrue(r.getSW1() == 0x9F);
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+                Log.info("select GSM response: " + Hex.toString(r.getData()));
+
+//             select IMSI
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F07"), 0x00), true);
+                Validate.isTrue(r.getSW1() == 0x9F);
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+                Log.info("select IMSI response: " + Hex.toString(r.getData()));
+
+                // read IMSI (requires PIN, 0x9804 "access condition not fulfilled")
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, 0x09), true);
+                Log.info("read IMSI response: " + Hex.toString(r.getData()));
+                // Y1: 082923212802905417
+                //     909232128220094571 imsi: 232128220094571, MCC 12 = Yesss
+
+                // H1: 082923706701906883
+                //     809232077610098638 imsi: 232077610098638, MCC 07 = tele.ring? T-Mobile Austria
+
+                // https://en.wikipedia.org/wiki/Mobile_country_code MCC AT: 232, MNC  01: A1, 03: TMO, 12: yesss, more
+            }
 
             // select MF/"Telecom"
 //            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), false);
@@ -149,8 +215,6 @@ public class SimCardCheck {
 //            size = r.getData()[3];
 //            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
 //            Log.info("MSISDN content: " + Hex.toString(r.getData()));
-
-
 
             // read/write SMS (EF sms)
 
@@ -182,6 +246,17 @@ public class SimCardCheck {
     }
 
     private static boolean isOK(ResponseAPDU r) {
-        return r.getSW() == 0x9000 || r.getSW1() == 0x61 || r.getSW1() == 0x62 || r.getSW1() == 0x63;
+        return r.getSW() == 0x9000 || r.getSW1() == 0x61 || r.getSW1() == 0x62 || r.getSW1() == 0x63 || r.getSW1() == 0x9F;
+    }
+
+    private static byte[] getPinBytes(String input) {
+        byte[] pinHex = Hex.fromString("FFFFFFFFFFFFFFFF"); // 8 bytes
+        Validate.isTrue(input.length() <= 8);
+        for (int i = 0; i < input.length(); i++) {
+            byte charByte = (byte) input.charAt(i);
+            Validate.isTrue(charByte >= 0x30 && charByte <= 0x39);  // digits 0-9
+            pinHex[i] = charByte;
+        }
+        return pinHex;
     }
 }
