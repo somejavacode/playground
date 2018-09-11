@@ -1,5 +1,7 @@
 import ufw.Hex;
 import ufw.Log;
+import ufw.RandomBytes;
+import ufw.Timer;
 import ufw.Validate;
 
 import javax.smartcardio.Card;
@@ -10,11 +12,14 @@ import javax.smartcardio.ResponseAPDU;
 import javax.smartcardio.TerminalFactory;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.List;
 
 public class SimCardCheck {
 
     public static void main(String[] args) throws Exception {
+
+        Log.setLevel(Log.Level.INFO);
 
         // show the list of available terminals
         TerminalFactory factory = TerminalFactory.getDefault();
@@ -55,7 +60,7 @@ public class SimCardCheck {
 
         Card card = null;
         boolean repeat = true;  // endless
-        int cardWait = 20000; // 20s
+        int cardWait = 10000; // 10s
         while (repeat) {
             // wait for card if necessary
             if (!terminal.isCardPresent()) {
@@ -116,7 +121,7 @@ public class SimCardCheck {
             // select EF ICCID 2FE2 (MF level)
             r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("2FE2"), 0x00), true);
             r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
-            Log.info("select ICCID response: " + Hex.toString(r.getData()));
+            // Log.info("select ICCID response: " + Hex.toString(r.getData()));
             // file size
             byte size = r.getData()[3];  // knowing, will be 0x0A bytes (Note: code assumes < 256)
             r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), true);
@@ -180,19 +185,20 @@ public class SimCardCheck {
 //            processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
                 // Log.info("select MF response: " + Hex.toString(r.getData()));
 
-                // select GSM
+                // select DF GSM
                 r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F20"), 0x00), false);
                 Validate.isTrue(r.getSW1() == 0x9F);
-                r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
-                Log.info("select GSM response: " + Hex.toString(r.getData()));
+                processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+//                Log.info("select GSM response: " + Hex.toString(r.getData()));
 
-//             select IMSI
+                // select IMSI
                 r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F07"), 0x00), true);
                 Validate.isTrue(r.getSW1() == 0x9F);
-                r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
-                Log.info("select IMSI response: " + Hex.toString(r.getData()));
+                processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+//                Log.info("select IMSI response: " + Hex.toString(r.getData()));
 
-                // read IMSI (requires PIN, 0x9804 "access condition not fulfilled")
+                // read IMSI (10.3.2 EF IMSI)
+                // requires PIN, 0x9804 "access condition not fulfilled"
                 r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, 0x09), true);
                 Log.info("read IMSI response: " + Hex.toString(r.getData()));
                 // Y1: 082923212802905417
@@ -202,21 +208,31 @@ public class SimCardCheck {
                 //     809232077610098638 imsi: 232077610098638, MCC 07 = tele.ring? T-Mobile Austria
 
                 // https://en.wikipedia.org/wiki/Mobile_country_code MCC AT: 232, MNC  01: A1, 03: TMO, 12: yesss, more
+
+                // select DF Telecom
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F10"), 0x00), false);
+                Validate.isTrue(r.getSW1() == 0x9F);
+                processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+
+                // select SMS
+                r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F3C"), 0x00), true);
+                Validate.isTrue(r.getSW1() == 0x9F);
+                processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), true);
+
+                Timer t = new Timer("read and write 20 SMS.", true);
+                // limit not specified, 20 was OK.
+                for (byte msgId = 1; msgId <= 20; msgId++) {
+                    // just any 176 bytes
+                    byte[] fakeMsg = RandomBytes.create(176, System.nanoTime());
+                    // write SMS record (10.5.3 EF SMS)
+                    processAPDU(channel, new CommandAPDU(0xA0, 0xDC, msgId, 0x04, fakeMsg, 0x00), true);
+
+                    // read SMS record (10.5.3 EF SMS), 176 bytes (0xB0)
+                    r = processAPDU(channel, new CommandAPDU(0xA0, 0xB2, msgId, 0x04, 0xB0), true);
+                    Validate.isTrue(Arrays.equals(fakeMsg, r.getData()));
+                }
+                t.stop(true);  // takes 1-2s
             }
-
-            // select MF/"Telecom"
-//            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("3F00"), 0x00), false);
-//            processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("7F10"), 0x00), false);
-//            // get MSISDN (Telecom level)
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xA4, 0x00, 0x00, Hex.fromString("6F40"), 0x00), false);
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xC0, 0x00, 0x00, r.getSW2()), false);
-//            Log.info("select MSISDN response: " + Hex.toString(r.getData()));
-//            // file size
-//            size = r.getData()[3];
-//            r = processAPDU(channel, new CommandAPDU(0xA0, 0xB0, 0x00, 0x00, size), false);
-//            Log.info("MSISDN content: " + Hex.toString(r.getData()));
-
-            // read/write SMS (EF sms)
 
             // finally disconnect card
             card.disconnect(false);
