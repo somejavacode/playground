@@ -87,20 +87,20 @@ public class FileTool {
      * @throws IOException in case of io problems
      */
     public static void readFileFromRAF(RandomAccessFile randomAccessFile, int offset, File dest, int byteCount) throws IOException {
-        FileOutputStream fos = new FileOutputStream(dest);
-        byte[] buffer = new byte[16384];
-        int remaining = byteCount;
-        int pos = offset;
-        while (remaining > 0) {
-            int bytes = remaining > buffer.length ? buffer.length : remaining;
-            randomAccessFile.seek(pos);
-            int readBytes = randomAccessFile.read(buffer, 0, bytes);
-            Validate.isTrue(readBytes == bytes, "missing bytes from file");
-            fos.write(buffer, 0, bytes);
-            remaining -= bytes;
-            pos += bytes;
+        try (FileOutputStream fos = new FileOutputStream(dest)) {
+            byte[] buffer = new byte[16384];
+            int remaining = byteCount;
+            int pos = offset;
+            while (remaining > 0) {
+                int bytes = remaining > buffer.length ? buffer.length : remaining;
+                randomAccessFile.seek(pos);
+                int readBytes = randomAccessFile.read(buffer, 0, bytes);
+                Validate.isTrue(readBytes == bytes, "missing bytes from file");
+                fos.write(buffer, 0, bytes);
+                remaining -= bytes;
+                pos += bytes;
+            }
         }
-        fos.close(); // TODO: this should be "finally"
     }
 
     /**
@@ -111,17 +111,18 @@ public class FileTool {
      * @throws IOException in case of io problems
      */
     public static void writeFileToStream(File file, OutputStream outputStream) throws IOException {
-        FileInputStream fis = new FileInputStream(file);
-        // append full content
-        byte[] buffer = new byte[16384];
-        int remaining = (int) file.length();
-        while (remaining > 0) {
-            int bytes = remaining > buffer.length ? buffer.length : remaining;
-            int readBytes = fis.read(buffer, 0, bytes);  // todo: read may be smarter. no need to calculate bytes?
-            Validate.isTrue(bytes == readBytes, "missing bytes from input steam");
-            outputStream.write(buffer, 0, bytes);
-            remaining -= bytes;
+        // try with resources, using AutoClosable
+        try (FileInputStream fis = new FileInputStream(file)) {
+            // append full content
+            byte[] buffer = new byte[16384];
+            int remaining = (int) file.length();
+            while (remaining > 0) {
+                int bytes = remaining > buffer.length ? buffer.length : remaining;
+                int readBytes = fis.read(buffer, 0, bytes);  // todo: read may be smarter. no need to calculate bytes?
+                Validate.isTrue(bytes == readBytes, "missing bytes from input steam");
+                outputStream.write(buffer, 0, bytes);
+                remaining -= bytes;
+            }
         }
-        fis.close(); // TODO: this should be "finally"
     }
 }
