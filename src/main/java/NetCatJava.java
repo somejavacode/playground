@@ -14,6 +14,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketAddress;
@@ -37,9 +38,11 @@ public class NetCatJava {
 
         // server
         int listenPort = parsedArgs.getIntValue("l");
+        String bindAddress = parsedArgs.getValue("b");
         // client
         String host = parsedArgs.getExtraValue(0);
         int port = parsedArgs.getExtraIntValue(1);
+        String socksStr = parsedArgs.getValue("s");
 
         String outFile = parsedArgs.getValue("of");
         String inFile = parsedArgs.getValue("if");
@@ -64,6 +67,7 @@ public class NetCatJava {
             int udpMax = 1024;
 
             if (listenPort > 0) {
+                // udp server
                 udpSocket = new DatagramSocket(listenPort);
                 byte[] buf = new byte[udpMax];
                 DatagramPacket recPacket = new DatagramPacket(buf, udpMax);
@@ -80,6 +84,7 @@ public class NetCatJava {
 
             }
             else {
+                // udp client
                 udpSocket = new DatagramSocket(); // without port!
                 byte[] buf = new byte[udpMax];
                 DatagramPacket sendPacket = new DatagramPacket(buf, udpMax);
@@ -99,15 +104,29 @@ public class NetCatJava {
 
         else if (listenPort > 0) {
             // tcp server
-            ServerSocket socket = new ServerSocket(listenPort);
-            // "cheap" single accept
+            InetAddress bind = bindAddress == null ? null : InetAddress.getByName(bindAddress);
+            int backlog = 50; // default value.
+            ServerSocket socket = new ServerSocket(listenPort, backlog, bind);
+            // "cheap" single threaded accept
             Socket s = socket.accept();
             handleSocketStreams(outFile, inFile, s);
         }
         else {
-            int connectTimeout = 5000;  // 5s
+            // tcp client
+            Proxy proxy = null;
+            if (socksStr != null) {
+                String socksHost = socksStr;
+                int socksPort = 1050;
+                if (socksStr.contains(":")) {
+                    String[] parts = socksStr.split(":");
+                    socksHost = parts[0];
+                    socksPort = Integer.parseInt(parts[1]);
+                }
+                proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(socksHost, socksPort));
+            }
+            int connectTimeout = 5000; // 5s
             SocketAddress socketAddress = new InetSocketAddress(host, port);
-            Socket s = new Socket();
+            Socket s = (proxy == null) ? new Socket() : new Socket(proxy);
             // Log.debug("start connect host=" + host + " port=" + port);
             s.connect(socketAddress, connectTimeout);
 
