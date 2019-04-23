@@ -23,7 +23,7 @@ public class FileScanTest {
 
         String workDir = System.getProperty("user.dir");
         String dir = workDir + "/tmp-" + System.currentTimeMillis();
-        new File(dir).mkdir();
+        new File(dir).mkdirs();
 
         RandomFileTool.main(new String[] {"c", name, "" + seed, "" + size, "" + nr, dir});
         Timer t = new Timer("FileScan update: " + nr + " files", false);
