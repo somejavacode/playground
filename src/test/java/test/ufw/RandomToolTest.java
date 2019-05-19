@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import ufw.Log;
 import ufw.RandomBytes;
+import ufw.RandomMinimal;
 import ufw.RandomTool;
 import ufw.Timer;
 
@@ -109,7 +110,7 @@ public class RandomToolTest {
     public void createMemoryAltV3Test() {
         int size = 1024 * 1024 * 256; // 256 MiByte
         byte[] bytes = new byte[size];
-        Random rand = new Random(SEED1);
+        RandomMinimal rand = new RandomMinimal(SEED1);
         Timer t = new Timer("create " + size + " random bytes in memory alt v3", false);
         nextBytesV3(rand, bytes);
         t.stop(true);
@@ -177,8 +178,8 @@ public class RandomToolTest {
         byte[] bytesAlt = new byte[size];
         Random rand = new Random(seed);
         rand.nextBytes(bytes);
-        rand = new Random(seed);
-        nextBytesV3(rand, bytesAlt);
+        RandomMinimal rand2 = new RandomMinimal(seed);
+        nextBytesV3(rand2, bytesAlt);
         Assert.assertTrue(Arrays.equals(bytes, bytesAlt));
     }
 
@@ -197,7 +198,7 @@ public class RandomToolTest {
         RandomTool.nextBytes(rand, bytes, 0, bytes.length);
     }
 
-    private static void nextBytesV3(Random rand, byte[] bytes) {
+    private static void nextBytesV3(RandomMinimal rand, byte[] bytes) {
         RandomBytes rb = new RandomBytes(rand);
         rb.nextBytes(bytes);
     }

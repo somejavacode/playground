@@ -1,7 +1,6 @@
 package ufw;
 
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * this class fixes three "problems" in Random.nextBytes()
@@ -14,7 +13,7 @@ import java.util.Random;
  */
 public class RandomBytes {
 
-    private Random random;
+    private RandomMinimal random;
     private int lastRand;
     private int lastRandPos;
 
@@ -23,7 +22,7 @@ public class RandomBytes {
      * @param seed seed for Random
      */
     public RandomBytes(long seed) {
-        this.random = new Random(seed);
+        this.random = new RandomMinimal(seed);
         this.lastRand = random.nextInt();
         this.lastRandPos = 0;
     }
@@ -32,7 +31,7 @@ public class RandomBytes {
      * create RandomBytes with given Random
      * @param rand Random to use
      */
-    public RandomBytes(Random rand) {
+    public RandomBytes(RandomMinimal rand) {
         this.random = rand;
         this.lastRand = random.nextInt();
         this.lastRandPos = 0;

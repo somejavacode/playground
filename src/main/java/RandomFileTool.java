@@ -23,7 +23,7 @@ public class RandomFileTool {
         if (args.length > 4) {
             count = Integer.parseInt(args[4]);
         }
-        String dir = "./";
+        String dir = "";
         if (args.length > 5) {
             dir = args[5] + "/";
             File dirFile = new File(dir);
@@ -58,18 +58,19 @@ public class RandomFileTool {
         final String command = arg.toLowerCase();
         final int bufferSize = 8192;
         if (command.equals("c")) {
-            FileOutputStream fos = new FileOutputStream(dir + file);
-            RandomInputStream ris = new RandomInputStream(seed, size);
-            StreamTool.copyAll(ris, fos, bufferSize);
-            fos.close();
+            try (FileOutputStream fos = new FileOutputStream(dir + file)) {
+                RandomInputStream ris = new RandomInputStream(seed, size);
+                StreamTool.copyAll(ris, fos, bufferSize);
+            }
         }
         else if (command.equals("v")) {
-            FileInputStream fis = new FileInputStream(dir + file);
-            RandomOutputStream ros = new RandomOutputStream(seed, size);
-            StreamTool.copyAll(fis, ros, bufferSize);
-            int missing = ros.getMissingByteCount();
-            if (missing > 0) {
-                throw new RuntimeException("missing bytes: " + missing);
+            try (FileInputStream fis = new FileInputStream(dir + file)) {
+                RandomOutputStream ros = new RandomOutputStream(seed, size);
+                StreamTool.copyAll(fis, ros, bufferSize);
+                int missing = ros.getMissingByteCount();
+                if (missing > 0) {
+                    throw new RuntimeException("missing bytes: " + missing);
+                }
             }
         }
         else if (command.equals("d")) {
