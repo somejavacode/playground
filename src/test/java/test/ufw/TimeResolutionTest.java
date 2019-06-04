@@ -24,12 +24,15 @@ public class TimeResolutionTest {
             Assert.assertTrue(end > start);
             total += end - start;
         }
+        // windows crap: 1/64s (15.625ms)
         Log.info("average currentTimeMillis step: " + 1.0 * total / runs);
     }
 
     @Test
     public void testCurrentSleeper() throws Exception {
         // this is insane. the sleeper thread will increase timer precision on windows.
+        // for more "amusement" see
+        // https://bugs.openjdk.java.net/browse/JDK-6435126 "This has been broken for too long. No use fixing it now."
         Runnable sleeper = new Runnable() {
             @Override
             public void run() {
@@ -59,6 +62,7 @@ public class TimeResolutionTest {
             Assert.assertTrue(end > start);
             total += end - start;
         }
+        // improved to approx 1ms
         Log.info("average currentTimeMillis step: " + 1.0 * total / runs);
         sleeperThread.interrupt();
     }
@@ -99,7 +103,6 @@ public class TimeResolutionTest {
             total += end - start;
         }
         Log.info("average nano step: " + 1.0 * total / runs);  // approx 1000
-
     }
 
 }
