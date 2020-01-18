@@ -22,19 +22,10 @@ public class Log {
     // default level debug
     private static int levelNr = Level.DEBUG.levelNr;
 
-    private static String processId = null;
 
     private static PrintStream ps = System.out;
 
     private static String newLine = "\n"; // LF = 0x0A .. unix line break
-
-    private static String getProcessId() {
-        if (processId != null) {
-            return processId;
-        }
-        processId = String.format("%05d", RuntimeInfo.getPid());
-        return processId;
-    }
 
     public static void setNewLine(String newLine) {
         Log.newLine = newLine;
@@ -114,7 +105,7 @@ public class Log {
         }
         StringBuilder sb = new StringBuilder(100);  // estimated log line length as default
         FixDateFormat.formatSync(sb, System.currentTimeMillis());
-        sb.append(" [").append(getProcessId()).append(":");
+        sb.append(" [");
         sb.append(Thread.currentThread().getName()).append("] ");
         sb.append(level.levelMsg);
         if (message != null) {

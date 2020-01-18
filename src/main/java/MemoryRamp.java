@@ -1,7 +1,5 @@
 import ufw.Log;
 
-import java.lang.management.ManagementFactory;
-import java.lang.management.MemoryMXBean;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -18,8 +16,6 @@ public class MemoryRamp {
     public static void main(String[] args) throws Exception {
 
         int bytesPerMiB = 1024 * 1024;
-        MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
-        Log.info("maximum heap: " + memoryBean.getHeapMemoryUsage().getMax() / bytesPerMiB + "MiB");
 
         ArrayList<byte[]> megs = new ArrayList<byte[]>();
         long seed = 4711;

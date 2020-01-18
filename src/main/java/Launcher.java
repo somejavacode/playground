@@ -3,16 +3,12 @@ import ufw.Log;
 import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
 
 public class Launcher {
 
     // test example "java Launcher java ShellTest"
     public static void main(String[] args) throws Exception {
         // just messing around for now, need to test with JDK9
-
-        String pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
-        Log.info("current pid " + pid);
 
 
         // new variant
