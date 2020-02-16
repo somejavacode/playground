@@ -15,6 +15,8 @@ import java.util.Random;
 
 public class HashBench {
 
+    private static final String DEFAULT = "default";
+
     public static void main(String[] args) throws Exception {
 
         String algorithm = "SHA-256";
@@ -37,7 +39,7 @@ public class HashBench {
             blockSize = Integer.parseInt(args[3]);
         }
 
-        String providerName = "SUN";
+        String providerName = DEFAULT;
         if (args.length > 4) {
             providerName = args[4];
             if (providerName.equals("BC")) {
@@ -70,7 +72,8 @@ public class HashBench {
     private static void doHash(String algorithm, int blockSize, long timeLimit,
                                String providerName, long seed, boolean warmUp) throws Exception {
 
-        MessageDigest md = MessageDigest.getInstance(algorithm, providerName);
+        MessageDigest md = providerName.equals(DEFAULT) ? MessageDigest.getInstance(algorithm)
+                : MessageDigest.getInstance(algorithm, providerName);
 
         Random rand = seed == 0 ? new Random() : new Random(seed);
         byte[] input = getRandomBytes(rand, blockSize);

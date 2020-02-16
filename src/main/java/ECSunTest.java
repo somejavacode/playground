@@ -9,11 +9,10 @@ public class ECSunTest {
 
     public static void main(String[] args) throws Exception {
 
-        String provider  = "SunEC";
         String algorithm = "EC";
         String curve = "secp256k1";
 
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm, provider);
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
         keyGen.initialize(new ECGenParameterSpec(curve));
         KeyPair keyPair = keyGen.generateKeyPair();
 

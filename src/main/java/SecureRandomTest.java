@@ -7,7 +7,7 @@ public class SecureRandomTest {
 
     public static void main(String[] args) {
         SecureRandom sr = new SecureRandom();
-        Log.info("algorithm=" + sr.getAlgorithm());  // windows: SHA1PRNG, linux: NativePRNG
+        Log.info("algorithm=" + sr.getAlgorithm());  // windows/android: SHA1PRNG, linux: NativePRNG
         int size = 8;
         int maxSize = 1024 * 1024;
         while (true) {

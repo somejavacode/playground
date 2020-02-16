@@ -17,6 +17,8 @@ import java.util.Random;
 
 public class CipherBench {
 
+    private static final String DEFAULT = "default";
+
     public static void main(String[] args) throws Exception {
 
         String cipherMode = "AES/CBC/NoPadding";
@@ -40,7 +42,7 @@ public class CipherBench {
             keySize = Integer.parseInt(args[3]);
         }
 
-        String providerName = "SunJCE";
+        String providerName = DEFAULT;
         if (args.length > 4) {
             providerName = args[4];
         }
@@ -117,7 +119,7 @@ public class CipherBench {
 
         SecretKeySpec keySpec = new SecretKeySpec(key, keyAlgorithm);
         AlgorithmParameterSpec parameterSpec = new IvParameterSpec(iv);
-        Cipher cipher = provider == null ? Cipher.getInstance(cipherMode) : Cipher.getInstance(cipherMode, provider);
+        Cipher cipher = provider.equals(DEFAULT) ? Cipher.getInstance(cipherMode) : Cipher.getInstance(cipherMode, provider);
         int mode = encrypt ? Cipher.ENCRYPT_MODE : Cipher.DECRYPT_MODE;
         cipher.init(mode, keySpec, parameterSpec);
         return cipher;

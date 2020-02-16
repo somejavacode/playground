@@ -45,7 +45,7 @@ public class CryptoLimitTest {
         byte[] iv = new byte[16];
         SecretKeySpec keySpec = new SecretKeySpec(key, "AES");
         AlgorithmParameterSpec parameterSpec = new IvParameterSpec(iv);
-        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding", "SunJCE");
+        Cipher cipher = Cipher.getInstance("AES/CBC/NoPadding");
         cipher.init(Cipher.ENCRYPT_MODE, keySpec, parameterSpec);
         cipher.doFinal(new byte[16]);
     }
