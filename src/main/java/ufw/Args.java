@@ -9,17 +9,20 @@ import java.util.HashSet;
  * <p>
  * reduced syntax: --flag1 -option1 value1 -option2 value2 --flag2 extraValue1 extraValue2
  * <p>
- * Rules: argument names start with "-". argument values and extra values must not start with "-".
+ * Rules:
+ *  There are flags and options followed by extra values.
+ *  option names start with "-" followed by option values not starting with "-".
+ *  flags names start with "--".
+ *  extra values must not start with "-".
  */
-// TODO: think about api with default values.
 public class Args {
 
     public static final String OPTION_PREFIX = "-";
-    public static final String FLAG_PREFIX = OPTION_PREFIX + OPTION_PREFIX; // "--"
+    public static final String FLAG_PREFIX = "--";
 
     private HashMap<String, String> parsedArgs = new HashMap<String, String>();
     private ArrayList<String> extraArgs = new ArrayList<String>();
-    private HashSet<String> flags = new HashSet<String>();
+    private HashSet<String> flags = new HashSet<>();
 
     /**
      * create Args (parse arguments)
@@ -85,10 +88,22 @@ public class Args {
         return parsedArgs.get(name);
     }
 
+    public String getValue(String name, String defaultValue) {
+        String result = parsedArgs.get(name);
+        if (result == null) {
+            return defaultValue;
+        }
+        return result;
+    }
+
     public int getIntValue(String name) {
+        return getIntValue(name, 0);
+    }
+
+    public int getIntValue(String name, int defaultValue) {
         String intStr = parsedArgs.get(name);
         if (intStr == null) {
-            return 0;
+            return defaultValue;
         }
         return Integer.parseInt(intStr);
     }

@@ -40,6 +40,7 @@ public class ArgsTest {
         Assert.assertEquals(VALUE1, args.getValue(NAME1));
         Assert.assertEquals(VALUE2, args.getValue(NAME2));
         Assert.assertNull(args.getValue(NAME3));
+        Assert.assertEquals(VALUE2, args.getValue(NAME3, VALUE2));
     }
 
     @Test
@@ -50,6 +51,7 @@ public class ArgsTest {
         Assert.assertEquals(INT_EXTRA1, args.getExtraIntValue(0));
 
         Assert.assertEquals(0, args.getIntValue(NAME2));
+        Assert.assertEquals(333, args.getIntValue(NAME2, 333));
         Assert.assertEquals(0, args.getExtraIntValue(1));
     }
 
@@ -93,6 +95,8 @@ public class ArgsTest {
         Assert.assertEquals(VALUE1, args.getValue(NAME1));
         Assert.assertEquals(VALUE2, args.getValue(NAME2));
         Assert.assertNull(args.getValue(NAME3));
+        Assert.assertEquals(VALUE2, args.getValue(NAME3, VALUE2));
+        Assert.assertEquals(INT_VALUE1, args.getIntValue(NAME3, INT_VALUE1));
 
         Assert.assertTrue(args.hasFlag(FLAG1));
         Assert.assertTrue(args.hasFlag(FLAG2));
