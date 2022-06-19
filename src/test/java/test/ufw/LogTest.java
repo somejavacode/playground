@@ -13,11 +13,15 @@ import java.util.TimeZone;
 
 public class LogTest {
     
-    private static final String TEMP_DIR = "/tmp/playground/log";
+    private static String TEMP_DIR = "/tmp/playground/log";
 
     @Before
     public void init() {
         try {
+            String prefix = System.getenv("PREFIX");
+            if (prefix != null && prefix.contains("termux")) {
+                TEMP_DIR = prefix + TEMP_DIR;
+            }
             new File(TEMP_DIR).mkdirs();  // this returns false if directory exists. this case is irrelevant
         }
         catch (Exception ex) {
