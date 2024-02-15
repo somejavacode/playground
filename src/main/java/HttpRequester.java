@@ -9,6 +9,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -28,7 +29,7 @@ import java.util.StringTokenizer;
 
 public class HttpRequester {
 
-    private static final String ASCII = "ASCII";
+    private static final Charset CHARSET = StandardCharsets.US_ASCII;
 
     public static void main(String[] args) throws Exception {
 
@@ -166,7 +167,7 @@ public class HttpRequester {
             Random rand = new Random(createSeed);
             if (chunked) {
                 byte[] chunk = new byte[blockSize];
-                byte[] chunkHeader = (Integer.toString(blockSize, 16) + "\r\n").getBytes(ASCII);
+                byte[] chunkHeader = (Integer.toString(blockSize, 16) + "\r\n").getBytes(CHARSET);
                 int remaining = length;
                 while (remaining > blockSize) {
                     rand.nextBytes(chunk);
@@ -182,14 +183,14 @@ public class HttpRequester {
                 if (remaining > 0) {
                     byte[] lastChunk = new byte[remaining];
                     rand.nextBytes(lastChunk);
-                    os.write(Integer.toString(remaining, 16).getBytes(ASCII));
+                    os.write(Integer.toString(remaining, 16).getBytes(CHARSET));
                     os.write(0x0d);
                     os.write(0x0a);
                     os.write(lastChunk);
                     os.write(0x0d);
                     os.write(0x0a);
                 }
-                os.write("0\r\n\r\n".getBytes(ASCII));  // final chunk (zero bytes) and trailer
+                os.write("0\r\n\r\n".getBytes(CHARSET));  // final chunk (zero bytes) and trailer
             }
             else {
                 int remaining = length;
@@ -513,7 +514,7 @@ public class HttpRequester {
             sb.append("\r\n");
 
             //
-            return sb.toString().getBytes(Charset.forName(ASCII));  // RFC 7230 3.2.4. ... tl;dr ... ASCII "preferred"
+            return sb.toString().getBytes(CHARSET);  // RFC 7230 3.2.4. ... tl;dr ... ASCII "preferred"
         }
 
     }
