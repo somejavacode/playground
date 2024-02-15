@@ -25,7 +25,11 @@ public class ConsoleEncodingTest {
         if (args.length > 0) {
             System.out.println("args[0]=" + args[0]); // test "round trip"
         }
-        System.out.println("arabic \u06ad \u06a7");  // non latin
+        System.out.println("arabic \u06ad \u06a7");
+        System.out.println("checkmark \u2713");
+        // https://www.oracle.com/technical-resources/articles/javase/supplementary.html
+        // unicode > U+FFFF will be encoded as two UTF-16 chars ("surrogate char pair")
+        System.out.println("poop \uD83D\uDCA9"); // U+1F4A9
 
         // System.console().printf("using System.console(): Hell\u00f6 \u00dcmlauts.");
     }
