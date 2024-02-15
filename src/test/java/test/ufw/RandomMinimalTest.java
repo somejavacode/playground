@@ -44,4 +44,31 @@ public class RandomMinimalTest {
         }
         t.stop(true);
     }
+
+    @Test
+    public void testRawSeed() {
+        int seed = 4711;
+        RandomMinimal min = new RandomMinimal(seed);
+        RandomMinimal minRaw = new RandomMinimal(min.getRawSeed(), true);
+        int r1 = min.nextInt();
+        int r2 = minRaw.nextInt();
+        Assert.assertEquals(r1, r2);
+    }
+
+    @Test
+    public void testResume() {
+        int seed = 4711;
+        int repeats = 1000000;
+        RandomMinimal min = new RandomMinimal(seed);
+        for (int i = 0; i < repeats; i++) {
+            min.nextInt();
+        }
+        // start after repeats
+        RandomMinimal minRaw = new RandomMinimal(min.getRawSeed(), true);
+
+        // show that "resume" is working
+        int r1 = min.nextInt();
+        int r2 = minRaw.nextInt();
+        Assert.assertEquals(r1, r2);
+    }
 }

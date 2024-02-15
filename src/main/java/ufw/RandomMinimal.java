@@ -3,7 +3,9 @@ package ufw;
 /**
  * simplified version of "java.util.Random" that creates identical "nextInt" values for given seed
  * <p>
- * not thread safe
+ * not thread safe but faster
+ * <p>
+ * can export and load "raw" seed, so random sequence can be resumed
  */
 public class RandomMinimal {
 
@@ -15,6 +17,19 @@ public class RandomMinimal {
 
     public RandomMinimal(long seed) {
         this.seed = initialScramble(seed);
+    }
+
+    public RandomMinimal(long seed, boolean raw) {
+        if (raw) {
+            this.seed = seed;
+        }
+        else {
+            this.seed = initialScramble(seed);
+        }
+    }
+
+    public long getRawSeed() {
+        return seed;
     }
 
     private static long initialScramble(long seed) {
