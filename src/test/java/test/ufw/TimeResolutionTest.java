@@ -63,7 +63,7 @@ public class TimeResolutionTest {
             total += end - start;
         }
         // improved to approx 1ms
-        Log.info("average currentTimeMillis step: " + 1.0 * total / runs);
+        Log.info("average currentTimeMillis step (sleeper): " + 1.0 * total / runs);
         sleeperThread.interrupt();
     }
 
